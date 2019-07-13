@@ -1,16 +1,21 @@
-// Package gitfs enables serving static file content from a git repository.
+// Package gitfs enables using static files in Go code without packing them into binary.
 //
-// It provides having static content in a Go project, not from Go files,
-// but from any file in a project, submitted to a remote git repository.
-// This content can also be versioned if required.
-// For debug purposes, it enables loading this files from local path.
+// This package enable loading static files from a remote git repository,
+// in Go code. This files can be used for static serving, template loading,
+// or anything else.
+// The following features are supported:
+//
+// * Loading of specific version is supported.
+// * For debug purposes, the files can be loaded from local path. The transition
+//   from remote project to local files is smooth.
+// * Project is loaded instantly and files are loaded lazily but only once.
 //
 // Examples
 //
-// To setup a filesystem from a github repository `github.com/x/y` with
-// at a given version v1.2.3, and path inside the project: "static":
+// To setup a filesystem from a github repository `github.com/x/y` 
+// at a given version v1.2.3 and path "static" inside the project:
 //
-// 	fs, err := gitfs.Open(ctx, "github.com/x/y/static@v1.2.3")
+// 	fs, err := gitfs.New(ctx, "github.com/x/y/static@v1.2.3")
 //
 // Then, reading a file can be done by opening it:
 //
@@ -20,6 +25,26 @@
 // static content:
 //
 // 	http.Handle("/", http.FileServer(fs))
+//
+// When used with private github repo, you would want to provide
+// an HTTP client with the appropriate credentials. For example,
+// if you have a Github Token in environnement variable `GITHUB_TOKEN`:
+//  
+// 	token := os.Getenv("GITHUB_TOKEN")
+// 	client := oauth2.NewClient(
+// 		context.Background(),
+// 		oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token}))
+// 	fs, err := gitfs.New(ctx, "github.com/x/y", gitfs.OptClient(client))
+//
+// There are some useful functions in ./fsutil package. For example, it
+// enables working easily with templates (They can work with any
+// `http.FileSystem`):
+//
+// 	fs, err := gitfs.New(ctx, "github.com/x/y/templates")
+// 	// Handle err...
+// 	tmpl, err := fsutil.TmplParseGlob(fs, nil, "*.gotmpl")
+// 	// Handle err...
+// 	tmpl.ExecuteTemplate(...)
 package gitfs
 
 import (
