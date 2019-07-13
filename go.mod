@@ -5,6 +5,7 @@ go 1.12
 require (
 	github.com/google/go-github v17.0.0+incompatible
 	github.com/google/go-querystring v1.0.0 // indirect
+	github.com/kr/fs v0.1.0
 	github.com/pkg/errors v0.8.1
 	github.com/src-d/go-git v4.7.0+incompatible
 	github.com/stretchr/testify v1.3.0
