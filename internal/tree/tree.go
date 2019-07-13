@@ -31,6 +31,13 @@ func (t Tree) AddDir(path string) error {
 	dirPath = cleanPath(dirPath)
 	d := newDir(name)
 	t[path] = d
+
+	// Skip setting parent directory for root directory.
+	if name == "" {
+		return nil
+	}
+
+	// Add parent directory, and add the current directory to the parent.
 	err := t.AddDir(dirPath)
 	if err != nil {
 		return err
@@ -56,6 +63,8 @@ func (t Tree) AddFile(path string, size int, load Loader) error {
 	dirPath = cleanPath(dirPath)
 	f := newFile(name, int64(size), load)
 	t[path] = f
+
+	// Add parent directory, and add the current file to the parent.
 	err := t.AddDir(dirPath)
 	if err != nil {
 		return err

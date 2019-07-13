@@ -9,9 +9,9 @@ import (
 
 func TestFileSystem(t *testing.T) {
 	t.Parallel()
-	walker := Walk(http.Dir("../internal"), "testdata")
+
 	var got []string
-	for walker.Step() {
+	for walker := Walk(http.Dir("../internal"), "testdata"); walker.Step(); {
 		got = append(got, walker.Path())
 	}
 	want := []string{

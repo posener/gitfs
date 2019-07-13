@@ -43,10 +43,6 @@ func TestFS(t *testing.T, fsFactory func(*testing.T, string) (http.FileSystem, e
 		_, err := fsFactory(t, "git.com/posener/gitfs")
 		assert.Error(t, err)
 	})
-	// t.Run("BadSubdirectory", func(t *testing.T) {
-	// 	_, err := fsFactory(t, "github.com/posener/gitfs/nosuchdir")
-	// 	assert.Error(t, err)
-	// })
 }
 
 type fsTest struct {
