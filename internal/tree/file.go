@@ -77,6 +77,8 @@ func (f *file) loadContent(ctx context.Context) error {
 	return nil
 }
 
+// lazyReader is the http.File for a file. It loads lazily file content
+// only when Read or Seek operations are performed.
 type lazyReader struct {
 	*file
 	reader *bytes.Reader

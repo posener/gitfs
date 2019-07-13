@@ -10,6 +10,7 @@ func newDir(name string) *dir {
 	return &dir{name: name}
 }
 
+// dir is an Opener for a directory. It is also the http.File.
 type dir struct {
 	name  string
 	files []os.FileInfo

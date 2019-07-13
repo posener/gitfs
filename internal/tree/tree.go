@@ -9,16 +9,26 @@ import (
 	"strings"
 )
 
+// Opener is an interface for a directory or a file provider.
 type Opener interface {
+	// Open returns a file/dir.
 	Open() http.File
+	// Stat returns information about the file/dir.
 	Stat() (os.FileInfo, error)
+	// Readdir retruns list of file info contained in a directory.
+	// Preforming Readdir on a file returns nil, nil.
 	Readdir(count int) ([]os.FileInfo, error)
 }
 
+// Tree maps a file path to a file provider.
 type Tree map[string]Opener
 
+// Loader is a function that loads file content. If the context id done
+// this function should return an error.
 type Loader func(context.Context) ([]byte, error)
 
+// AddDir adds a directory to a tree. It also adds recursively all the
+// parent directories.
 func (t Tree) AddDir(path string) error {
 	path = cleanPath(path)
 	if t[path] != nil {
@@ -51,6 +61,8 @@ func (t Tree) AddDir(path string) error {
 	return nil
 }
 
+// AddFile adds a file to a tree. It also adds recursively all the
+// parent directories.
 func (t Tree) AddFile(path string, size int, load Loader) error {
 	path = cleanPath(path)
 	if t[path] != nil {

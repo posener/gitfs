@@ -24,6 +24,7 @@ type Contexter interface {
 	WithContext(context.Context) http.File
 }
 
+// Open is the implementation of http.FileSystem over a Tree.
 func (fs FS) Open(name string) (http.File, error) {
 	path := strings.Trim(name, "/")
 
