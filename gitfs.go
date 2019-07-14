@@ -100,7 +100,7 @@ func OptLocal(path string) func(*config) {
 // ref is optional and can be any github ref:
 //  * `heads/<branch name>` for a branch.
 //  * `tags/<tag>` for releases or git tags.
-//  * `<version>` for semver compatible releases (e.g. v1.2.3).
+//  * `<version>` for Semver compatible releases (e.g. v1.2.3).
 // If no ref is set, the default branch will be used.
 func New(ctx context.Context, project string, opts ...option) (http.FileSystem, error) {
 	var c config
@@ -118,6 +118,23 @@ func New(ctx context.Context, project string, opts ...option) (http.FileSystem, 
 	}
 }
 
+// WithContext applies context to an http.File if it implements the
+// contexter interface.
+//
+// Usage example:
+//
+// 	f, err := fs.Open("file")
+// 	// Handle err...
+// 	f = gitfs.WithContext(f, ctx)
+// 	_, err = f.Read(...)
+func WithContext(f http.File, ctx context.Context) http.File {
+	fCtx, ok := f.(contexter)
+	if !ok {
+		return f
+	}
+	return fCtx.WithContext(ctx)
+}
+
 // SetLogger sets informative logging for gitfs. If nil, no logging
 // will be done.
 func SetLogger(logger log.Logger) {
@@ -130,3 +147,7 @@ type config struct {
 }
 
 type option func(*config)
+
+type contexter interface {
+	WithContext(ctx context.Context) http.File
+}

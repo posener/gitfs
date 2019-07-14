@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/posener/gitfs/fsutil"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -78,4 +79,17 @@ func TestNew_local(t *testing.T) {
 	ctx := context.Background()
 	_, err := New(ctx, "github.com/posener/gitfs", OptLocal("."))
 	require.NoError(t, err)
+}
+
+func TestWithContext(t *testing.T) {
+	t.Parallel()
+	fs, err := New(context.Background(), "github.com/posener/gitfs")
+	require.NoError(t, err)
+	f, err := fs.Open("README.md")
+	require.NoError(t, err)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	f = WithContext(f, ctx)
+	_, err = f.Read(make([]byte, 10))
+	assert.EqualError(t, err, "failed getting blob: context canceled")
 }
