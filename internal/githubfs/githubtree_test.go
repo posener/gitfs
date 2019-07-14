@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/posener/gitfs/internal/testfs"
-	"github.com/posener/gitfs/internal/tree"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
@@ -22,17 +21,24 @@ func TestNew(t *testing.T) {
 	testfs.TestFS(t, testFilesystem)
 }
 
+type contexter interface {
+	WithContext(context.Context) http.File
+}
+
 func TestOpen_cancelledContext(t *testing.T) {
 	t.Parallel()
-	fsInterface, err := testFilesystem(t, "github.com/posener/gitfs")
+	fs, err := testFilesystem(t, "github.com/posener/gitfs")
 	require.NoError(t, err)
-	fs := fsInterface.(*tree.FS)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	fs = fs.WithContext(ctx)
 	f21, err := fs.Open("internal/testdata/f01")
 	require.NoError(t, err)
+
+	f21Ctx, ok := f21.(contexter)
+	require.True(t, ok)
+	f21 = f21Ctx.WithContext(ctx)
+
 	buf := bytes.NewBuffer(nil)
 	_, err = buf.ReadFrom(f21)
 	require.Error(t, err)

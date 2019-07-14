@@ -17,7 +17,7 @@ func Walk(hfs http.FileSystem, root string) *fs.Walker {
 	return fs.WalkFS(root, fileSystem{hfs})
 }
 
-// FileSystem implements fs.FileSystem over http.FileSystem. 
+// FileSystem implements fs.FileSystem over http.FileSystem.
 //
 // See https://godoc.org/github.com/kr/fs#FileSystem for more details.
 type fileSystem struct {

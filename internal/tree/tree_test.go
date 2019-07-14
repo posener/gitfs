@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -46,6 +47,29 @@ func TestTree(t *testing.T) {
 	assertFile(t, tr, "e/f1", 10)
 	assertDir(t, tr, "e")
 	assertDirContains(t, tr, "e", "f1")
+}
+
+func TestOpen(t *testing.T) {
+	t.Parallel()
+	tr := make(Tree)
+	require.NoError(t, tr.AddFile("a", 6, contentProvider("file a")))
+	require.NoError(t, tr.AddFile("b/c", 6, contentProvider("file c")))
+
+	a, err := tr.Open("a")
+	require.NoError(t, err)
+	assertContent(t, a, "file a")
+
+	a, err = tr.Open("/a")
+	require.NoError(t, err)
+	assertContent(t, a, "file a")
+
+	// Not found
+	_, err = tr.Open("nosuchfile")
+	assert.EqualError(t, err, os.ErrNotExist.Error())
+
+	// Invalid - a is a file not a directory.
+	_, err = tr.Open("a/")
+	assert.EqualError(t, err, os.ErrInvalid.Error())
 }
 
 func TestDir_readDir(t *testing.T) {

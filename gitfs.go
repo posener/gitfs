@@ -45,7 +45,7 @@
 // appropriate credentials. The credentials can be passed by providing an
 // HTTP client. For example, to use a Github Token from environnement
 // variable `GITHUB_TOKEN`:
-//  
+//
 // 	token := os.Getenv("GITHUB_TOKEN")
 // 	client := oauth2.NewClient(
 // 		context.Background(),

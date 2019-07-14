@@ -34,7 +34,7 @@ func Match(projectName string) bool {
 }
 
 // New returns a Tree for a given github project name.
-func New(ctx context.Context, client *http.Client, projectName string) (*tree.FS, error) {
+func New(ctx context.Context, client *http.Client, projectName string) (tree.Tree, error) {
 	p, err := newGithubProject(ctx, client, projectName)
 	if err != nil {
 		return nil, err
@@ -45,7 +45,7 @@ func New(ctx context.Context, client *http.Client, projectName string) (*tree.FS
 		return nil, err
 	}
 	log.Printf("Loaded project with %d files in %.1fs", len(t), time.Now().Sub(start).Seconds())
-	return tree.NewFS(t), nil
+	return t, nil
 }
 
 func newGithubProject(ctx context.Context, client *http.Client, projectName string) (*project, error) {
