@@ -1,3 +1,4 @@
+// Package log enables controlling gitfs logging.
 package log
 
 import (
