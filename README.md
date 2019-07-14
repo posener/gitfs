@@ -86,7 +86,7 @@ variable should point to any directory within the github project).
 
 * [fsutil](./fsutil): Package fsutil provides useful utility functions for http.FileSystem.
 
-* [log](./log)
+* [log](./log): Package log enables controlling gitfs logging.
 
 #### Examples
 
