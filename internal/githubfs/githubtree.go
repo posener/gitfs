@@ -17,7 +17,7 @@ import (
 
 var (
 	reGithubProject = regexp.MustCompile(`^github\.com/([^@/]+)/([^@/]+)(/([^@]*))?(@([^#]+))?$`)
-	reSemver        = regexp.MustCompile(`^v\d+(\.\d+){0,2}$`)
+	reSemver        = regexp.MustCompile(`^v?\d+(\.\d+){0,2}$`)
 )
 
 type project struct {

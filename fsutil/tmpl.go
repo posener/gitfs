@@ -11,7 +11,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// TmplParse Parse templates from the given filesystem according to the
+// TmplParse parses templates from the given filesystem according to the
 // given paths. If tmpl is not nil, the templates will be added to it.
 // paths must contain at least one path. All paths must exist in the
 // given filesystem.
@@ -30,7 +30,7 @@ func TmplParseGlob(fs http.FileSystem, tmpl *txttmpl.Template, pattern string) (
 	return t.Template, err
 }
 
-// TmplParseHTML Parse HTML templates from the given filesystem according
+// TmplParseHTML parses HTML templates from the given filesystem according
 // to the given paths. If tmpl is not nil, the templates will be added to
 // it. paths must contain at least one path. All paths must exist in the
 // given filesystem.

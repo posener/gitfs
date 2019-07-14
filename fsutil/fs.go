@@ -1,4 +1,4 @@
-// Package fsutil provides utility functions for http filesystems.
+// Package fsutil provides useful utility functions for http.FileSystem.
 package fsutil
 
 import (
@@ -9,15 +9,17 @@ import (
 	"github.com/kr/fs"
 )
 
-// Walk returns a https://godoc.org/github.com/kr/fs#Walker over an
-// https://golang.org/pkg/net/http/#FileSystem.
+// Walk returns a fs.Walker over http.FileSystem, which enables
+// walking over all files in the filesystem.
+//
+// See https://godoc.org/github.com/kr/fs#Walker for more details.
 func Walk(hfs http.FileSystem, root string) *fs.Walker {
 	return fs.WalkFS(root, fileSystem{hfs})
 }
 
-// FileSystem implements https://godoc.org/github.com/kr/fs#FileSystem over
-// https://golang.org/pkg/net/http/#FileSystem. It can be used to walking
-// over files in the filesystem.
+// FileSystem implements fs.FileSystem over http.FileSystem. 
+//
+// See https://godoc.org/github.com/kr/fs#FileSystem for more details.
 type fileSystem struct {
 	http.FileSystem
 }

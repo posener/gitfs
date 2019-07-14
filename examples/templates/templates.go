@@ -1,4 +1,4 @@
-// An example that locally serves files from github.com/golang/go/doc
+// An example that shows how gitfs helps using template files with Go code smoothly.
 package main
 
 import (

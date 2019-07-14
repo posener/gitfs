@@ -11,35 +11,60 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func ExampleTest() {
+// With gitfs you can open a remote git repository, and load any file,
+// including non-go files.
+// In this example, the README.md file of a remote repository is loaded.
+func Example_open() {
 	ctx := context.Background()
-	fs, err := New(ctx, "github.com/kelseyhightower/helloworld@tags/3.0.0")
+
+	// The load path is of the form: github.com/<owner>/<repo>(/<path>)?(@<ref>)?.
+	// `ref` can reference any git tag or branch. If github releases are in Semver format,
+	// the `tags/` prefix is not needed in the `ref` part.
+	fs, err := New(ctx, "github.com/kelseyhightower/helloworld@3.0.0")
 	if err != nil {
 		log.Fatalf("Failed initialize filesystem: %s", err)
 	}
+
+	// Open any file in the github repository, using the `Open` function. Both files
+	// and directory can be opened. The content is not loaded until it is actually being
+	// read. The content is loaded only once.
 	f, err := fs.Open("README.md")
 	if err != nil {
 		log.Fatalf("Failed opening file: %s", err)
 	}
+
+	// Copy the content to stdout.
 	io.Copy(os.Stdout, f)
+
 	// Output: # helloworld
 }
 
-func ExampleTest_templates() {
+// The ./fsutil package is a collection of useful functions that can work with
+// any `http.FileSystem` implementation.
+// For example, here we will use a function that loads go templates from the
+// filesystem.
+func Example_fsutil() {
 	ctx := context.Background()
+
+	// Open a git remote repository `posener/gitfs` in path `examples/templates`.
 	fs, err := New(ctx, "github.com/posener/gitfs/examples/templates")
 	if err != nil {
 		log.Fatalf("Failed initialize filesystem: %s", err)
 	}
 
+	// Use util function that loads all templates according to a glob pattern.
 	tmpls, err := fsutil.TmplParseGlob(fs, nil, "*.gotmpl")
 	if err != nil {
 		log.Fatalf("Failed parsing templates: %s", err)
 	}
+
+	// Execute the template and write to stdout.
 	tmpls.ExecuteTemplate(os.Stdout, "tmpl1.gotmpl", "Foo")
+
 	// Output: Hello, Foo
 }
 
+// Tests not supported repository pattern.
 func TestNew_notSupported(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
@@ -47,6 +72,7 @@ func TestNew_notSupported(t *testing.T) {
 	require.Error(t, err)
 }
 
+// Tests loading of local repository.
 func TestNew_local(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()

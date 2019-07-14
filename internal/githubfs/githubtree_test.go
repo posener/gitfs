@@ -53,6 +53,9 @@ func TestGithubProjectProperties(t *testing.T) {
 		{path: "github.com/x/y@v1", wantOwner: "x", wantRepo: "y", wantRef: "tags/v1"},
 		{path: "github.com/x/y@v1.2", wantOwner: "x", wantRepo: "y", wantRef: "tags/v1.2"},
 		{path: "github.com/x/y@v1.2.3", wantOwner: "x", wantRepo: "y", wantRef: "tags/v1.2.3"},
+		{path: "github.com/x/y@1", wantOwner: "x", wantRepo: "y", wantRef: "tags/1"},
+		{path: "github.com/x/y@1.2", wantOwner: "x", wantRepo: "y", wantRef: "tags/1.2"},
+		{path: "github.com/x/y@1.2.3", wantOwner: "x", wantRepo: "y", wantRef: "tags/1.2.3"},
 		{path: "github.com/x/y/static/path", wantOwner: "x", wantRepo: "y", wantPath: "static/path/"},
 		{path: "github.com/x/y/static@v1.2.3", wantOwner: "x", wantRepo: "y", wantRef: "tags/v1.2.3", wantPath: "static/"},
 	}
@@ -85,7 +88,8 @@ func TestGithubProjectProperties_error(t *testing.T) {
 		// Invalid semvers
 		"github.com/x/y@v1.",
 		"github.com/x/y@v1.2.3.4",
-		"github.com/x/y@1.2.3",
+		"github.com/x/y@1.",
+		"github.com/x/y@1.2.3.4",
 	}
 
 	for _, path := range paths {

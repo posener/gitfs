@@ -1,4 +1,4 @@
-// An example that locally serves files from github.com/golang/go/doc
+// An example locally serves files from github.com/golang/go/doc.
 package main
 
 import (

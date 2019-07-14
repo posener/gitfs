@@ -1,34 +1,50 @@
-// Package gitfs enables using static files in Go code without packing them into binary.
+// Package gitfs loads static files in Go code without binary-packing.
 //
-// This package enable loading static files from a remote git repository,
-// in Go code. This files can be used for static serving, template loading,
+// This package enable loading any file from remote git repository in Go code.
+// This files can be used for static serving, template loading, content loading,
 // or anything else.
+//
 // The following features are supported:
 //
 // * Loading of specific version is supported.
+//
 // * For debug purposes, the files can be loaded from local path. The transition
-//   from remote project to local files is smooth.
+// from remote project to local files is smooth.
+//
 // * Project is loaded instantly and files are loaded lazily but only once.
 //
-// Examples
+// Usage
 //
-// To setup a filesystem from a github repository `github.com/x/y` 
-// at a given version v1.2.3 and path "static" inside the project:
+// First, we need to create a filesystem using the `New` function.
+// This function accepts the project path with pattern:
+// `github.com/<owner>/<repo>(/<path>)?(@<ref>)?`.
+// If no `path` is specified, the root of the project will be used.
+// `ref` can be any git branch using `heads/<branch name>` or any
+// git tag using `tags/<tag>`. If the tag is of Semver format, the `tags/`
+// prefix is not required.
+// If no `ref` is specified, the default branch will be used.
+//
+// Here we will load repository `github.com/x/y` at version v1.2.3
+// and internal path "static":
 //
 // 	fs, err := gitfs.New(ctx, "github.com/x/y/static@v1.2.3")
 //
-// Then, reading a file can be done by opening it:
+// Reading a file from the repository can be done using the `Open` method.
+// This function accepts a path, relative to the root of the defined
+// filesystem.
 //
 // 	f, err := fs.Open("index.html")
 //
-// The variable fs, which is of type `http.FileSystem`, can be used to serve
-// static content:
+// The variable `fs` implements `http.FileSystem`, and can be used for anything
+// that accepts it. For example, it can be used for serving static content
+// using the standard library:
 //
 // 	http.Handle("/", http.FileServer(fs))
 //
-// When used with private github repo, you would want to provide
-// an HTTP client with the appropriate credentials. For example,
-// if you have a Github Token in environnement variable `GITHUB_TOKEN`:
+// When used with private github repository, it should be accessed with
+// appropriate credentials. The credentials can be passed by providing an
+// HTTP client. For example, to use a Github Token from environnement
+// variable `GITHUB_TOKEN`:
 //  
 // 	token := os.Getenv("GITHUB_TOKEN")
 // 	client := oauth2.NewClient(
@@ -36,15 +52,17 @@
 // 		oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token}))
 // 	fs, err := gitfs.New(ctx, "github.com/x/y", gitfs.OptClient(client))
 //
-// There are some useful functions in ./fsutil package. For example, it
-// enables working easily with templates (They can work with any
-// `http.FileSystem`):
+// For debugging purposes, it is easier and faster to use local static
+// content and not remote content that was pushed to the remote repository.
+// This is enabled by the `OptLocal` option. To use this option only in
+// local development and not in production system, it can be used as follow:
 //
-// 	fs, err := gitfs.New(ctx, "github.com/x/y/templates")
-// 	// Handle err...
-// 	tmpl, err := fsutil.TmplParseGlob(fs, nil, "*.gotmpl")
-// 	// Handle err...
-// 	tmpl.ExecuteTemplate(...)
+// 	local := os.Getenv("LOCAL_DEBUG")
+// 	fs, err := gitfs.New(ctx, "github.com/x/y", gitfs.OptLocal(local))
+//
+// Then, running the program with `LOCAL_DEBUG=.` will use local files while
+// running without it will use the remote files. (the value of the environment
+// variable should point to any directory within the github project).
 package gitfs
 
 import (
