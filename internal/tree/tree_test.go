@@ -196,6 +196,10 @@ func assertFile(t *testing.T, tr Tree, path string, size int64) {
 	require.NoError(t, err)
 	assert.False(t, st.IsDir())
 	assert.Equal(t, st.Size(), size)
+	assert.Equal(t, filepath.Base(path), st.Name())
+	assert.Equal(t, os.FileMode(0), st.Mode())
+	assert.Equal(t, time.Time{}, st.ModTime())
+	assert.Nil(t, nil, st.Sys())
 }
 
 func assertContent(t *testing.T, r io.Reader, content string) {
