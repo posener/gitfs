@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -162,10 +164,16 @@ func TestFile_overrideFailure(t *testing.T) {
 
 func assertDir(t *testing.T, tr Tree, path string) {
 	t.Helper()
-	require.NotNil(t, tr[path])
-	st, err := tr[path].Stat()
+	d := tr[path]
+	require.NotNil(t, d)
+	st, err := d.Stat()
 	require.NoError(t, err)
 	assert.True(t, st.IsDir())
+	assert.Equal(t, filepath.Base(path), st.Name())
+	assert.Equal(t, int64(0), st.Size())
+	assert.Equal(t, os.ModeDir, st.Mode())
+	assert.Equal(t, time.Time{}, st.ModTime())
+	assert.Nil(t, nil, st.Sys())
 }
 
 func assertDirContains(t *testing.T, tr Tree, path string, contains string) {

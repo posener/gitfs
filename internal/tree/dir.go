@@ -7,6 +7,9 @@ import (
 )
 
 func newDir(name string) *dir {
+	if name == "" {
+		name = "."
+	}
 	return &dir{name: name}
 }
 
