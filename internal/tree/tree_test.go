@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -70,6 +71,30 @@ func TestOpen(t *testing.T) {
 	// Invalid - a is a file not a directory.
 	_, err = tr.Open("a/")
 	assert.EqualError(t, err, os.ErrInvalid.Error())
+}
+func TestOpen_concurrent(t *testing.T) {
+	t.Parallel()
+	const (
+		goroutines = 10
+		loops      = 100
+	)
+
+	tr := make(Tree)
+	require.NoError(t, tr.AddFile("a", 6, contentProvider("file a")))
+	var wg sync.WaitGroup
+
+	wg.Add(goroutines)
+	for i := 0; i < goroutines; i++ {
+		go func() {
+			defer wg.Done()
+			for j := 0; j < loops; j++ {
+				a, err := tr.Open("a")
+				require.NoError(t, err)
+				assertContent(t, a, "file a")
+			}
+		}()
+	}
+	wg.Wait()
 }
 
 func TestDir_readDir(t *testing.T) {
