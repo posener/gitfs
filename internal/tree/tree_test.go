@@ -58,16 +58,27 @@ func TestOpen(t *testing.T) {
 	require.NoError(t, tr.AddFile("a", 6, contentProvider("file a")))
 	require.NoError(t, tr.AddFile("b/c", 6, contentProvider("file c")))
 
-	a, err := tr.Open("a")
-	require.NoError(t, err)
-	assertContent(t, a, "file a")
+	// Valid file paths.
+	for _, path := range []string{"a", "/a"} {
+		f, err := tr.Open(path)
+		require.NoError(t, err)
+		assertContent(t, f, "file a")
+		st, err := f.Stat()
+		require.NoError(t, err)
+		assertFileInfo(t, st, "a", 6)
+	}
 
-	a, err = tr.Open("/a")
-	require.NoError(t, err)
-	assertContent(t, a, "file a")
+	// Valid directory paths.
+	for _, path := range []string{"b", "/b", "b/", "/b/"} {
+		f, err := tr.Open(path)
+		require.NoError(t, err)
+		st, err := f.Stat()
+		require.NoError(t, err)
+		assertDirInfo(t, st, "b")
+	}
 
-	// Not found
-	_, err = tr.Open("nosuchfile")
+	// Not found.
+	_, err := tr.Open("nosuchfile")
 	assert.EqualError(t, err, os.ErrNotExist.Error())
 
 	// Invalid - a is a file not a directory.
@@ -168,8 +179,13 @@ func assertDir(t *testing.T, tr Tree, path string) {
 	require.NotNil(t, d)
 	st, err := d.Stat()
 	require.NoError(t, err)
+	assertDirInfo(t, st, filepath.Base(path))
+}
+
+func assertDirInfo(t *testing.T, st os.FileInfo, name string) {
+	t.Helper()
 	assert.True(t, st.IsDir())
-	assert.Equal(t, filepath.Base(path), st.Name())
+	assert.Equal(t, name, st.Name())
 	assert.Equal(t, int64(0), st.Size())
 	assert.Equal(t, os.ModeDir, st.Mode())
 	assert.Equal(t, time.Time{}, st.ModTime())
@@ -194,9 +210,14 @@ func assertFile(t *testing.T, tr Tree, path string, size int64) {
 	require.NotNil(t, tr[path])
 	st, err := tr[path].Stat()
 	require.NoError(t, err)
+	assertFileInfo(t, st, filepath.Base(path), size)
+}
+
+func assertFileInfo(t *testing.T, st os.FileInfo, name string, size int64) {
+	t.Helper()
 	assert.False(t, st.IsDir())
 	assert.Equal(t, st.Size(), size)
-	assert.Equal(t, filepath.Base(path), st.Name())
+	assert.Equal(t, name, st.Name())
 	assert.Equal(t, os.FileMode(0), st.Mode())
 	assert.Equal(t, time.Time{}, st.ModTime())
 	assert.Nil(t, nil, st.Sys())
