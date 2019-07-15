@@ -4,12 +4,14 @@ import (
 	"context"
 	"io"
 	"log"
+	"net/http"
 	"os"
 	"testing"
 
 	"github.com/posener/gitfs/fsutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/oauth2"
 )
 
 // With gitfs you can open a remote git repository, and load any file,
@@ -92,4 +94,15 @@ func TestWithContext(t *testing.T) {
 	f = WithContext(f, ctx)
 	_, err = f.Read(make([]byte, 10))
 	assert.EqualError(t, err, "failed getting blob: context canceled")
+}
+
+func init() {
+	// Set Github access token in default client if available
+	// from environment variables.
+	token := os.Getenv("GITHUB_TOKEN")
+	if token != "" {
+		http.DefaultClient = oauth2.NewClient(
+			context.Background(),
+			oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token}))
+	}
 }
