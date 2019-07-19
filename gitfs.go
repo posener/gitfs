@@ -92,6 +92,14 @@ func OptLocal(path string) func(*config) {
 	}
 }
 
+// OptPrefetch sets prefetching all files in the filesystem when it is initially
+// loaded.
+func OptPrefetch(prefetch bool) func(*config) {
+	return func(c *config) {
+		c.prefetch = prefetch
+	}
+}
+
 // New returns a new git filesystem for the given project.
 //
 // Github:
@@ -112,7 +120,7 @@ func New(ctx context.Context, project string, opts ...option) (http.FileSystem, 
 	case c.localPath != "":
 		return localfs.New(project, c.localPath)
 	case githubfs.Match(project):
-		return githubfs.New(ctx, c.client, project)
+		return githubfs.New(ctx, c.client, project, c.prefetch)
 	default:
 		return nil, errors.New("project type not supported")
 	}
@@ -144,6 +152,7 @@ func SetLogger(logger log.Logger) {
 type config struct {
 	client    *http.Client
 	localPath string
+	prefetch  bool
 }
 
 type option func(*config)
