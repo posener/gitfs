@@ -1,10 +1,10 @@
 package githubfs
 
 import (
-	"bytes"
 	"context"
 	"encoding/base64"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"regexp"
 	"strings"
@@ -174,7 +174,7 @@ func (p *project) contentLoader(sha string) func(context.Context) ([]byte, error
 // contentDownloadLoader is a Loader for downling a file from a URL.
 // It immediately loads the file rather than lazily.
 func (p *project) contentDownloadLoader(ctx context.Context, downloadURL string) func(ctx context.Context) ([]byte, error) {
-	data := bytes.NewBuffer(nil)
+	var data []byte
 	req, err := http.NewRequest(http.MethodGet, downloadURL, nil)
 	if err == nil {
 		resp, err := p.httpClient.Do(req.WithContext(ctx))
@@ -182,7 +182,7 @@ func (p *project) contentDownloadLoader(ctx context.Context, downloadURL string)
 			if resp.StatusCode != http.StatusOK {
 				err = errors.Errorf("Got status %d when downloading %s", resp.StatusCode, downloadURL)
 			} else {
-				_, err = data.ReadFrom(resp.Body)
+				data, err = ioutil.ReadAll(resp.Body)
 				resp.Body.Close()
 			}
 		}
@@ -194,7 +194,7 @@ func (p *project) contentDownloadLoader(ctx context.Context, downloadURL string)
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
-		return data.Bytes(), nil
+		return data, nil
 	}
 }
 

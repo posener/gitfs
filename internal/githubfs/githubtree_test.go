@@ -39,8 +39,7 @@ func TestOpen_cancelledContext(t *testing.T) {
 	require.True(t, ok)
 	f21 = f21Ctx.WithContext(ctx)
 
-	buf := bytes.NewBuffer(nil)
-	_, err = buf.ReadFrom(f21)
+	_, err = ioutil.ReadAll(f21)
 	require.Error(t, err)
 }
 
