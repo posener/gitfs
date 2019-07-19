@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestFileSystem(t *testing.T) {
+func TestWalk(t *testing.T) {
 	t.Parallel()
 
 	var got []string
