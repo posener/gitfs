@@ -6,34 +6,40 @@
 [![GoDoc](https://godoc.org/github.com/posener/gitfs?status.svg)](http://godoc.org/github.com/posener/gitfs)
 [![goreadme](https://goreadme.herokuapp.com/badge/posener/gitfs.svg)](https://goreadme.herokuapp.com)
 
-Package gitfs loads static files in Go code without binary-packing.
+Package gitfs is a complete solution for static files in Go code.
 
-This package enable loading any file from remote git repository in Go code.
-This files can be used for static serving, template loading, content loading,
-or anything else.
+This package enables loading any file from remote git repository in Go code.
+The static files are not required to be packed into the go binary in order to
+be used. They can be loaded in runtime when accessed, or preloaded when the
+program starts.
 
 The following features are supported:
 
-* Loading of specific version is supported.
+* Loading of specific version/tag/branch.
 
-* For debug purposes, the files can be loaded from local path. The transition
-from remote project to local files is smooth.
+* For debug purposes, the files can be loaded from local path instead of the
+remote repository. The transition from remote project to local files is smooth.
 
-* Project is loaded instantly and files are loaded lazily but only once.
+* Files are loaded lazily by default or they can be preloaded if required.
+
+* Files can be packed to the Go binary using a command line tool, which provides
+a smooth transition from using remote repository to binary packed.
+
+* This project is using the standard `http.FileSystem` interface for the loaded
+static files, and provides tooling around it.
 
 #### Usage
 
-First, we need to create a filesystem using the `New` function.
-This function accepts the project path with pattern:
-`github.com/<owner>/<repo>(/<path>)?(@<ref>)?`.
+First, create a filesystem using the `New` function. This function accepts the
+project path with pattern: `github.com/<owner>/<repo>(/<path>)?(@<ref>)?`.
 If no `path` is specified, the root of the project will be used.
 `ref` can be any git branch using `heads/<branch name>` or any
 git tag using `tags/<tag>`. If the tag is of Semver format, the `tags/`
 prefix is not required.
 If no `ref` is specified, the default branch will be used.
 
-Here we will load repository `github.com/x/y` at version v1.2.3
-and internal path "static":
+In the following example, the repository `github.com/x/y` at version v1.2.3
+and internal path "static" is loaded:
 
 ```go
 fs, err := gitfs.New(ctx, "github.com/x/y/static@v1.2.3")
@@ -55,6 +61,8 @@ using the standard library:
 http.Handle("/", http.FileServer(fs))
 ```
 
+#### Private Repositories
+
 When used with private github repository, it should be accessed with
 appropriate credentials. The credentials can be passed by providing an
 HTTP client. For example, to use a Github Token from environnement
@@ -68,7 +76,9 @@ client := oauth2.NewClient(
 fs, err := gitfs.New(ctx, "github.com/x/y", gitfs.OptClient(client))
 ```
 
-For debugging purposes, it is easier and faster to use local static
+#### Development
+
+For quick development purposes, it is easier and faster to use local static
 content and not remote content that was pushed to the remote repository.
 This is enabled by the `OptLocal` option. To use this option only in
 local development and not in production system, it can be used as follow:
@@ -78,15 +88,29 @@ local := os.Getenv("LOCAL_DEBUG")
 fs, err := gitfs.New(ctx, "github.com/x/y", gitfs.OptLocal(local))
 ```
 
-Then, running the program with `LOCAL_DEBUG=.` will use local files while
-running without it will use the remote files. (the value of the environment
-variable should point to any directory within the github project).
+In this example, we stored the value for `OptLocal` in an environment
+variable. As a result, when running the program with `LOCAL_DEBUG=.`
+local files will be used, while running without it will result in using
+the remote files. (the value of the environment variable should point
+to any directory within the github project).
+
+#### Binary Packing
+
+Using gitfs does not mean that files are required to be remotely fetched.
+When binary packing of the files is needed, a command line tool can pack
+them and no other changes in the code are required.
+
+To get the tool run: `go get github.com/posener/gitfs/cmd/gitfs`.
+
+Running the tool is by `gitfs <patterns>`. It will generate A file in the
+current directory that will contain all the required filesystem.
+The filesystems are detected by searching for `gitfs.New` calls.
 
 ## Sub Packages
 
-* [fsutil](./fsutil): Package fsutil provides useful utility functions for http.FileSystem.
+* [bin](./bin): Package bin is a proxy to the internal/binfs.Register function.
 
-* [log](./log): Package log enables controlling gitfs logging.
+* [fsutil](./fsutil): Package fsutil provides useful utility functions for http.FileSystem.
 
 #### Examples
 
