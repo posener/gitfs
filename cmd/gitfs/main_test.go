@@ -45,10 +45,10 @@ func TestGetOut(t *testing.T) {
 		{out: "f.go", want: "f.go"},
 		// A dir is appended with file.
 		{out: "/tmp", want: "/tmp/gitfs.go"},
-		// Local dir is appended with a file
+		// Local dir is appended with a file.
 		{out: ".", want: "gitfs.go"},
 		{out: "..", want: "../gitfs.go"},
-		// A file in a dir stay the same
+		// A file in a dir stay the same.
 		{out: "/tmp/f.go", want: "/tmp/f.go"},
 	}
 	for _, tt := range tests {

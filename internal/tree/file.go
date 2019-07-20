@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/posener/gitfs/log"
+	"github.com/posener/gitfs/internal/log"
 )
 
 func newFile(name string, size int64, load Loader) *file {

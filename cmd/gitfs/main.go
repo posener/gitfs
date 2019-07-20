@@ -162,8 +162,8 @@ The command will traverses all Go files in the given patterns and
 looks for 'gitfs.New' calls. For each of these calls, it downloads the
 specified project. All the projects are then saved into a single
 go file (default gitfs.go).
-When this file exists, the files will automatically be loaded from the
-packed version instead of remote repository.
+When this file is compiled to a Go binary, the projects are automatically
+loaded from the packed version instead of remote repository.
 
 Note:
 
@@ -178,9 +178,6 @@ To pack all usage of gitfs filesystems in the current project, run from
 the root of the project the following command:
 
 	gitfs ./...
-
-It will create a gitfs.go file that will automatically make the project use
-binary packed filesystem instead of fetching it from github.
 
 Flags:
 

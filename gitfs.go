@@ -97,7 +97,7 @@ import (
 	"github.com/posener/gitfs/internal/binfs"
 	"github.com/posener/gitfs/internal/githubfs"
 	"github.com/posener/gitfs/internal/localfs"
-	"github.com/posener/gitfs/log"
+	"github.com/posener/gitfs/internal/log"
 )
 
 // OptClient sets up an HTTP client to perform request to the remote repository.

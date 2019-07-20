@@ -14,7 +14,7 @@ import (
 	"github.com/google/go-github/github"
 	"github.com/pkg/errors"
 	"github.com/posener/gitfs/internal/tree"
-	"github.com/posener/gitfs/log"
+	"github.com/posener/gitfs/internal/log"
 )
 
 var (
