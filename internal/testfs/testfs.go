@@ -1,7 +1,7 @@
 package testfs
 
 import (
-	"bytes"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"testing"
@@ -152,9 +152,7 @@ func assertNotContains(t *testing.T, d http.File, notContains string) {
 
 func assertFileContent(t *testing.T, f http.File, content []byte) {
 	t.Helper()
-	gotContent := bytes.NewBuffer(nil)
-	n, err := gotContent.ReadFrom(f)
+	b, err := ioutil.ReadAll(f)
 	require.NoError(t, err)
-	assert.Equal(t, int64(len(content)), n)
-	assert.Equal(t, content, gotContent.Bytes())
+	assert.Equal(t, content, b)
 }

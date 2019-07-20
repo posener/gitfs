@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/posener/gitfs/log"
+	"github.com/posener/gitfs/internal/log"
 )
 
 // Opener is an interface for a directory or a file provider.

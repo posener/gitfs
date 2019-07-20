@@ -1,16 +1,11 @@
 // Package log enables controlling gitfs logging.
 package log
 
-import (
-	stdlog "log"
-	"os"
-)
-
 type Logger interface {
 	Printf(format string, v ...interface{})
 }
 
-var Log Logger = stdlog.New(os.Stdout, "[gitfs] ", stdlog.LstdFlags)
+var Log Logger = nil
 
 func Printf(format string, v ...interface{}) {
 	if Log == nil {

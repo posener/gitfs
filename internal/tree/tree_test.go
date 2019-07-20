@@ -1,10 +1,10 @@
 package tree
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"sync"
@@ -226,11 +226,9 @@ func assertFileInfo(t *testing.T, st os.FileInfo, name string, size int64) {
 func assertContent(t *testing.T, r io.Reader, content string) {
 	t.Helper()
 	require.NotNil(t, r)
-	gotContent := bytes.NewBuffer(nil)
-	n, err := gotContent.ReadFrom(r)
+	b, err := ioutil.ReadAll(r)
 	require.NoError(t, err)
-	assert.Equal(t, int64(len(content)), n)
-	assert.Equal(t, content, gotContent.String())
+	assert.Equal(t, content, string(b))
 }
 
 func contentProvider(content string) func(context.Context) ([]byte, error) {
