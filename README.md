@@ -8,43 +8,61 @@
 
 Package gitfs is a complete solution for static files in Go code.
 
-This package enables loading any file from remote git repository in Go code.
-The static files are not required to be packed into the go binary in order to
-be used. They can be loaded in runtime when accessed, or preloaded when the
-program starts.
+When Go code uses non-Go files, they are not packaged into the binary.
+The common approach to the problem, as implemented by
+[go-bindata](https://github.com/jteeuwen/go-bindata)
+is to convert all the required static files into Go code, which
+eventually compiled into the binary.
 
-The following features are supported:
+This library takes a different approach, in which the static files are not
+required to be "binary-packed", and even no required to be in the same repository
+as the Go code. This package enables loading static content from a remote
+git repository, or packing it to the binary if desired or loaded
+from local path for development process. The transition from remote repository
+to binary packed content, to local content is completely smooth.
+
+*The API is simple and minimalistic*. The `New` method returns a (sub)tree
+of a Git repository, represented by the standard `http.FileSystem` interface.
+This object enables anything that is possible to do with a regular filesystem,
+such as opening a file or listing a directory.
+Additionally, the [./fsutil](./fsutil) package provides enhancements over the `http.FileSystem`
+object (They can work with any object that implements the interface) such
+as loading Go templates in the standard way, or walking over the filesystem.
+
+Supported features:
 
 * Loading of specific version/tag/branch.
 
 * For debug purposes, the files can be loaded from local path instead of the
-remote repository. The transition from remote project to local files is smooth.
+remote repository.
 
 * Files are loaded lazily by default or they can be preloaded if required.
 
-* Files can be packed to the Go binary using a command line tool, which provides
-a smooth transition from using remote repository to binary packed.
+* Files can be packed to the Go binary using a command line tool.
 
-* This project is using the standard `http.FileSystem` interface for the loaded
-static files, and provides tooling around it.
+* This project is using the standard `http.FileSystem` interface.
+
+* In [./fsutil](./fsutil) there are some general useful tools around the
+`http.FileSystem` interace.
 
 #### Usage
 
-First, create a filesystem using the `New` function. This function accepts the
-project path with pattern: `github.com/<owner>/<repo>(/<path>)?(@<ref>)?`.
+To create a filesystem using the `New` function, provide the Git
+project with the pattern: `github.com/<owner>/<repo>(/<path>)?(@<ref>)?`.
 If no `path` is specified, the root of the project will be used.
 `ref` can be any git branch using `heads/<branch name>` or any
 git tag using `tags/<tag>`. If the tag is of Semver format, the `tags/`
-prefix is not required.
-If no `ref` is specified, the default branch will be used.
+prefix is not required. If no `ref` is specified, the default branch will
+be used.
 
-In the following example, the repository `github.com/x/y` at version v1.2.3
+In the following example, the repository `github.com/x/y` at tag v1.2.3
 and internal path "static" is loaded:
 
 ```go
 fs, err := gitfs.New(ctx, "github.com/x/y/static@v1.2.3")
 ```
 
+The variable `fs` implements the `http.FileSystem` interface.
 Reading a file from the repository can be done using the `Open` method.
 This function accepts a path, relative to the root of the defined
 filesystem.
@@ -53,9 +71,9 @@ filesystem.
 f, err := fs.Open("index.html")
 ```
 
-The variable `fs` implements `http.FileSystem`, and can be used for anything
-that accepts it. For example, it can be used for serving static content
-using the standard library:
+The `fs` variable can be used in anything that accept the standard interface.
+For example, it can be used for serving static content using the standard
+library:
 
 ```go
 http.Handle("/", http.FileServer(fs))
@@ -63,10 +81,11 @@ http.Handle("/", http.FileServer(fs))
 
 #### Private Repositories
 
-When used with private github repository, it should be accessed with
-appropriate credentials. The credentials can be passed by providing an
-HTTP client. For example, to use a Github Token from environnement
-variable `GITHUB_TOKEN`:
+When used with private github repository, the Github API calls should be
+instrumented with the appropriate credentials. The credentials can be
+passed by providing an HTTP client.
+
+For example, to use a Github Token from environnement variable `GITHUB_TOKEN`:
 
 ```go
 token := os.Getenv("GITHUB_TOKEN")
@@ -78,8 +97,8 @@ fs, err := gitfs.New(ctx, "github.com/x/y", gitfs.OptClient(client))
 
 #### Development
 
-For quick development purposes, it is easier and faster to use local static
-content and not remote content that was pushed to the remote repository.
+For quick development workflows, it is easier and faster to use local static
+content and not remote content that was pushed to a remote repository.
 This is enabled by the `OptLocal` option. To use this option only in
 local development and not in production system, it can be used as follow:
 
@@ -98,13 +117,14 @@ to any directory within the github project).
 
 Using gitfs does not mean that files are required to be remotely fetched.
 When binary packing of the files is needed, a command line tool can pack
-them and no other changes in the code are required.
+them for you.
 
 To get the tool run: `go get github.com/posener/gitfs/cmd/gitfs`.
 
-Running the tool is by `gitfs <patterns>`. It will generate A file in the
-current directory that will contain all the required filesystem.
-The filesystems are detected by searching for `gitfs.New` calls.
+Running the tool is by `gitfs <patterns>`. This generates a `gitfs.go`
+file in the current directory that contains all the used filesystems' data.
+This will cause all `gitfs.New` calls to automatically use the packed data,
+insted of fetching the data on runtime.
 
 ## Sub Packages
 
