@@ -21,6 +21,29 @@ func TestNew(t *testing.T) {
 	t.Run("Prefetch", func(t *testing.T) { testfs.TestFS(t, testFileSystemPrefetch) })
 }
 
+func TestNewWithGlob(t *testing.T) {
+	tests := []struct {
+		name     string
+		prefetch bool
+	}{
+		{"no prefetch", false},
+		{"prefetch", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fs, err := testFilesystem(t, "github.com/posener/gitfs/internal/testdata", tt.prefetch, []string{"*/*1"})
+			require.NoError(t, err)
+			_, err = fs.Open("d1/d11")
+			assert.NoError(t, err)
+			_, err = fs.Open("d1")
+			assert.NoError(t, err)
+			_, err = fs.Open("f01")
+			assert.Error(t, err)
+		})
+	}
+}
+
 type contexter interface {
 	WithContext(context.Context) http.File
 }
@@ -107,26 +130,26 @@ func TestGithubProjectProperties_error(t *testing.T) {
 
 func TestNewGithubProject(t *testing.T) {
 	t.Parallel()
-	p, err := newGithubProject(context.Background(), mockClient(), "github.com/x/y")
+	p, err := newGithubProject(context.Background(), mockClient(), "github.com/x/y", nil)
 	require.NoError(t, err)
 	assert.Equal(t, "heads/master", p.ref)
 }
 
 func testFileSystemNoPrefetch(t *testing.T, project string) (http.FileSystem, error) {
-	return testFilesystem(t, project, false)
+	return testFilesystem(t, project, false, nil)
 }
 
 func testFileSystemPrefetch(t *testing.T, project string) (http.FileSystem, error) {
-	return testFilesystem(t, project, true)
+	return testFilesystem(t, project, true, nil)
 }
 
-func testFilesystem(t *testing.T, project string, prefetch bool) (http.FileSystem, error) {
+func testFilesystem(t *testing.T, project string, prefetch bool, glob []string) (http.FileSystem, error) {
 	t.Helper()
 	if token == "" {
 		t.Skip("no github token provided")
 	}
 	c := oauth2.NewClient(context.Background(), oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token}))
-	return New(context.Background(), c, project, prefetch)
+	return New(context.Background(), c, project, prefetch, glob)
 }
 
 func mockClient() *http.Client {

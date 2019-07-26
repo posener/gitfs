@@ -13,6 +13,7 @@ import (
 
 	"github.com/google/go-github/github"
 	"github.com/pkg/errors"
+	"github.com/posener/gitfs/internal/glob"
 	"github.com/posener/gitfs/internal/log"
 	"github.com/posener/gitfs/internal/tree"
 )
@@ -29,6 +30,7 @@ type project struct {
 	repo       string
 	ref        string
 	path       string
+	glob       glob.Patterns
 }
 
 // Match returns true if the given projectName matches a github project.
@@ -37,8 +39,8 @@ func Match(projectName string) bool {
 }
 
 // New returns a Tree for a given github project name.
-func New(ctx context.Context, client *http.Client, projectName string, prefetch bool) (tree.Tree, error) {
-	p, err := newGithubProject(ctx, client, projectName)
+func New(ctx context.Context, client *http.Client, projectName string, prefetch bool, glob []string) (tree.Tree, error) {
+	p, err := newGithubProject(ctx, client, projectName, glob)
 	if err != nil {
 		return nil, err
 	}
@@ -57,15 +59,19 @@ func New(ctx context.Context, client *http.Client, projectName string, prefetch 
 	return t, err
 }
 
-func newGithubProject(ctx context.Context, client *http.Client, projectName string) (*project, error) {
+func newGithubProject(ctx context.Context, client *http.Client, projectName string, patterns []string) (*project, error) {
+	g, err := glob.New(patterns...)
+	if err != nil {
+		return nil, err
+	}
 	if client == nil {
 		client = http.DefaultClient
 	}
 	p := &project{
 		client:     github.NewClient(client),
 		httpClient: client,
+		glob:       g,
 	}
-	var err error
 
 	p.owner, p.repo, p.path, p.ref, err = githubProjectProperties(projectName)
 	if err != nil {
@@ -129,8 +135,14 @@ func (p *project) getTree(ctx context.Context) (tree.Tree, error) {
 		var err error
 		switch entry.GetType() {
 		case "tree": // A directory.
+			if !p.glob.Match(path, true) {
+				continue
+			}
 			err = t.AddDir(path)
 		case "blob": // A file.
+			if !p.glob.Match(path, false) {
+				continue
+			}
 			err = t.AddFile(path, entry.GetSize(), p.contentLoader(entry.GetSHA()))
 		}
 		if err != nil {
@@ -252,6 +264,9 @@ func (gc *recursiveGetContents) recursive(ctx context.Context, root string) erro
 
 		switch entry.GetType() {
 		case "dir": // A directory.
+			if !gc.project.glob.Match(fsPath, true) {
+				continue
+			}
 			gc.mu.Lock()
 			err = gc.tree.AddDir(fsPath)
 			gc.mu.Unlock()
@@ -261,6 +276,9 @@ func (gc *recursiveGetContents) recursive(ctx context.Context, root string) erro
 			gc.wg.Add(1)
 			go gc.check(gc.recursive(ctx, fullPath))
 		case "file": // A file.
+			if !gc.project.glob.Match(fsPath, false) {
+				continue
+			}
 			gc.wg.Add(1)
 			go gc.check(gc.downloadContent(ctx, fsPath, entry.GetSize(), entry.GetDownloadURL()))
 		}
@@ -269,6 +287,9 @@ func (gc *recursiveGetContents) recursive(ctx context.Context, root string) erro
 	if file != nil {
 		path := file.GetPath()
 		path = strings.TrimPrefix(path, gc.project.path)
+		if !gc.project.glob.Match(path, false) {
+			return nil
+		}
 		gc.mu.Lock()
 		err = gc.tree.AddFile(path, file.GetSize(), contentFetchLoader(file.GetContent))
 		gc.mu.Unlock()

@@ -108,6 +108,19 @@
 // file in the current directory that contains all the used filesystems' data.
 // This will cause all `gitfs.New` calls to automatically use the packed data,
 // insted of fetching the data on runtime.
+//
+// Excluding files
+//
+// Files exclusion can be done by including only specific files using a glob
+// pattern with `OptGlob` option, using the Glob options. This will affect
+// both local loading of files, remote loading and binary packing (may
+// reduce binary size). For example:
+//
+// 	fs, err := gitfs.New(ctx, "github.com/x/y/templates",
+// 		gitfs.OptGlob("*.gotmpl", "*/*.gotmpl"))
+//
+// This will include all files with `gotmpl` suffix in the templates directory
+// and one level of subdirectories.
 package gitfs
 
 import (
@@ -115,6 +128,7 @@ import (
 	"net/http"
 
 	"github.com/pkg/errors"
+	"github.com/posener/gitfs/fsutil"
 	"github.com/posener/gitfs/internal/binfs"
 	"github.com/posener/gitfs/internal/githubfs"
 	"github.com/posener/gitfs/internal/localfs"
@@ -146,6 +160,12 @@ func OptPrefetch(prefetch bool) func(*config) {
 	}
 }
 
+func OptGlob(patterns ...string) func(*config) {
+	return func(c *config) {
+		c.patterns = patterns
+	}
+}
+
 // New returns a new git filesystem for the given project.
 //
 // Github:
@@ -165,13 +185,17 @@ func New(ctx context.Context, project string, opts ...option) (http.FileSystem, 
 	switch {
 	case c.localPath != "":
 		log.Printf("FileSystem %q from local directory", project)
-		return localfs.New(project, c.localPath)
+		fs, err := localfs.New(project, c.localPath)
+		if err != nil {
+			return nil, err
+		}
+		return fsutil.Glob(fs, c.patterns...)
 	case binfs.Match(project):
 		log.Printf("FileSystem %q from binary", project)
 		return binfs.Get(project), nil
 	case githubfs.Match(project):
 		log.Printf("FileSystem %q from remote Github repository", project)
-		return githubfs.New(ctx, c.client, project, c.prefetch)
+		return githubfs.New(ctx, c.client, project, c.prefetch, c.patterns)
 	default:
 		return nil, errors.Errorf("project %q not supported", project)
 	}
@@ -204,6 +228,7 @@ type config struct {
 	client    *http.Client
 	localPath string
 	prefetch  bool
+	patterns  []string
 }
 
 type option func(*config)

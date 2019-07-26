@@ -23,6 +23,9 @@ func New(patterns ...string) (Patterns, error) {
 // is required. If it is a directory, only matching a prefix of any of
 // the patterns is required.
 func (p Patterns) Match(path string, isDir bool) bool {
+	if len(p) == 0 {
+		return true
+	}
 	path = filepath.Clean(path)
 	return (isDir && p.matchPrefix(path)) || (!isDir && p.matchFull(path))
 }

@@ -14,6 +14,8 @@ func TestMatch(t *testing.T) {
 		name    string
 		isDir   bool
 	}{
+		// No pattern should match anything.
+		{name: "foo"},
 		{pattern: []string{"foo"}, name: "foo"},
 		{pattern: []string{"*"}, name: "foo"},
 		{pattern: []string{"foo"}, name: "./foo"},

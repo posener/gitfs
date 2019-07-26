@@ -29,7 +29,7 @@ func TestLoadSimulation(t *testing.T) {
 
 	// Check that two calls to `gitfs`.New with the right projects
 	// were observed, as this is what ./testdata/testdata.go calls.
-	assert.ElementsMatch(t, []string{project1, project2}, p.calls)
+	assert.ElementsMatch(t, []call{{project1, nil}, {project2, []string{"foo", "*"}}}, p.calls)
 
 	// Register the data that was created by loadBinaries.
 	for _, project := range []string{project1, project2} {
@@ -52,7 +52,7 @@ func TestLoadSimulation(t *testing.T) {
 	}
 }
 
-func TestLoadBinaries_patterNotFound(t *testing.T) {
+func TestLoadBinaries_patternNotFound(t *testing.T) {
 	t.Parallel()
 
 	var p testProvider
@@ -65,11 +65,16 @@ func TestLoadBinaries_patterNotFound(t *testing.T) {
 
 type testProvider struct {
 	// Saves with what projects the provider was called.
-	calls []string
+	calls []call
 }
 
-func (p *testProvider) provide(project string) (http.FileSystem, error) {
-	p.calls = append(p.calls, project)
+type call struct {
+	project  string
+	patterns []string
+}
+
+func (p *testProvider) provide(project string, patterns []string) (http.FileSystem, error) {
+	p.calls = append(p.calls, call{project, patterns})
 	return testFS(project), nil
 }
 
