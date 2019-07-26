@@ -27,7 +27,8 @@ This object enables anything that is possible to do with a regular filesystem,
 such as opening a file or listing a directory.
 Additionally, the [./fsutil](./fsutil) package provides enhancements over the `http.FileSystem`
 object (They can work with any object that implements the interface) such
-as loading Go templates in the standard way, or walking over the filesystem.
+as loading Go templates in the standard way, walking over the filesystem,
+and applying glob patterns on a filesystem.
 
 Supported features:
 
