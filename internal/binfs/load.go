@@ -45,26 +45,28 @@ func LoadBinaries(patterns []string, provider fsProviderFn) (map[string]string, 
 	}
 
 	// Find all projects
-	l := make(loader)
+	l := make(lookup)
 	for _, pkg := range pkgs {
 		for _, file := range pkg.Syntax {
-			l.inspectFile(file, pkg.Fset)
+			l.lookupAST(file, pkg.Fset)
 		}
 	}
 
 	// Load all binaries
 	binaries := make(map[string]string)
 	for project, config := range l {
-		binaries[project] = provider.loadBinary(*config)
+		binaries[project] = loadBinary(provider, *config)
 	}
 	return binaries, nil
 }
 
-type loader map[string]*Config
+// lookup finds calls for gift.New given an AST.
+type lookup map[string]*Config
 
-// inspectFile inspects a single file and looks for `gitfs.New` calls.
-// If a call was found, it finds all project that are used in the file.
-func (l loader) inspectFile(file *ast.File, fset *token.FileSet) {
+// lookupAST inspects a single AST and looks for `gitfs.New` calls.
+// If a call was found, it saves the project this call was called for
+// and options it was called with.
+func (l lookup) lookupAST(file *ast.File, fset *token.FileSet) {
 	ast.Inspect(file, func(n ast.Node) bool {
 		if call, ok := n.(*ast.CallExpr); ok {
 			var id *ast.Ident
@@ -77,8 +79,8 @@ func (l loader) inspectFile(file *ast.File, fset *token.FileSet) {
 			if id != nil && id.Name == "New" {
 				if isPkgDot(call.Fun, "gitfs", "New") {
 					project := stringExpr(call.Args[1])
+					pos := fset.Position(call.Pos())
 					if project == "" {
-						pos := fset.Position(call.Pos())
 						log.Printf(
 							"Skipping gitfs.New call in %s. Could not get project name from call.",
 							pos)
@@ -91,7 +93,13 @@ func (l loader) inspectFile(file *ast.File, fset *token.FileSet) {
 					}
 
 					// Treat OptGlob call.
-					patterns := findOptGlob(call.Args[2:])
+					patterns, err := findOptGlob(call.Args[2:])
+					if err != nil {
+						log.Printf(
+							"Failed getting glob options in %s, building without glob pattern: %s",
+							pos, err)
+						patterns = nil
+					}
 					if len(patterns) == 0 {
 						// This call does not use pattern. Mark it so we will later load
 						// all files.
@@ -109,7 +117,7 @@ func (l loader) inspectFile(file *ast.File, fset *token.FileSet) {
 }
 
 // projectBinary retruns the binary encoded format of a single project.
-func (provider fsProviderFn) loadBinary(c Config) string {
+func loadBinary(provider fsProviderFn, c Config) string {
 	log.Printf("Encoding project: %s", c.Project)
 	// If there was one place that did not use a pattern, we should ignore
 	// the patterns that were used in other places.
@@ -132,7 +140,7 @@ func (provider fsProviderFn) loadBinary(c Config) string {
 // findOptGlob takes arguments of the gitfs.New and looks for the
 // gitfs.OptGlob option. If it finds it, it returns the arguments that
 // were passed to that option.
-func findOptGlob(exprs []ast.Expr) []string {
+func findOptGlob(exprs []ast.Expr) ([]string, error) {
 	for _, expr := range exprs {
 		call, ok := expr.(*ast.CallExpr)
 		if !ok {
@@ -142,15 +150,18 @@ func findOptGlob(exprs []ast.Expr) []string {
 			continue
 		}
 		var patterns []string
-		for _, arg := range call.Args {
+		for i, arg := range call.Args {
 			pattern := stringExpr(arg)
-			if pattern != "" {
-				patterns = append(patterns, pattern)
+			if pattern == "" {
+				return nil, errors.Errorf(
+					"can't understand string expression of OptGlob arg #%d with value %+v",
+					i, arg)
 			}
+			patterns = append(patterns, pattern)
 		}
-		return patterns
+		return patterns, nil
 	}
-	return nil
+	return nil, nil
 }
 
 // isPkgDot returns true if expr is `<pkg>.<name>`
