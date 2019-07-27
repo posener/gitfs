@@ -116,11 +116,7 @@
 // both local loading of files, remote loading and binary packing (may
 // reduce binary size). For example:
 //
-// 	fs, err := gitfs.New(ctx, "github.com/x/y/templates",
-// 		gitfs.OptGlob("*.gotmpl", "*/*.gotmpl"))
-//
-// This will include all files with `gotmpl` suffix in the templates directory
-// and one level of subdirectories.
+// 	fs, err := gitfs.New(ctx, "github.com/x/y/templates", gitfs.OptGlob("*.gotmpl", "*/*.gotmpl")
 package gitfs
 
 import (
@@ -137,7 +133,7 @@ import (
 
 // OptClient sets up an HTTP client to perform request to the remote repository.
 // This client can be used for authorization credentials.
-func OptClient(client *http.Client) func(*config) {
+func OptClient(client *http.Client) option {
 	return func(c *config) {
 		c.client = client
 	}
@@ -146,7 +142,7 @@ func OptClient(client *http.Client) func(*config) {
 // OptLocal result in looking for local git repository before accessing remote
 // repository. The given path should be contained in a git repository which
 // has a remote URL that matches the requested project.
-func OptLocal(path string) func(*config) {
+func OptLocal(path string) option {
 	return func(c *config) {
 		c.localPath = path
 	}
@@ -154,13 +150,15 @@ func OptLocal(path string) func(*config) {
 
 // OptPrefetch sets prefetching all files in the filesystem when it is initially
 // loaded.
-func OptPrefetch(prefetch bool) func(*config) {
+func OptPrefetch(prefetch bool) option {
 	return func(c *config) {
 		c.prefetch = prefetch
 	}
 }
 
-func OptGlob(patterns ...string) func(*config) {
+// OptGlob define glob patterns for which only matching files and directories
+// will be included in the filesystem.
+func OptGlob(patterns ...string) option {
 	return func(c *config) {
 		c.patterns = patterns
 	}
