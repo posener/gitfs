@@ -1,7 +1,6 @@
 package binfs
 
 import (
-	"context"
 	"io/ioutil"
 	"net/http"
 	"testing"
@@ -81,6 +80,9 @@ func (p *testProvider) provide(c Config) (http.FileSystem, error) {
 // the provided content.
 func testFS(id string) http.FileSystem {
 	t := make(tree.Tree)
-	t.AddFile("dir/file", 10, func(context.Context) ([]byte, error) { return []byte(id), nil })
+	err := t.AddFileContent("dir/file", []byte(id))
+	if err != nil {
+		panic(err)
+	}
 	return t
 }

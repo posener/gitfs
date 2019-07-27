@@ -110,6 +110,16 @@ func (t Tree) AddFile(path string, size int, load Loader) error {
 	return nil
 }
 
+// AddFileContent adds a file that its content is already available.
+func (t Tree) AddFileContent(path string, content []byte) error {
+	return t.AddFile(path, len(content), func(ctx context.Context) ([]byte, error) {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		return content, nil
+	})
+}
+
 func valid(name string, info func() (os.FileInfo, error)) bool {
 	expectingDir := len(name) > 0 && name[len(name)-1] == '/'
 	if expectingDir {
