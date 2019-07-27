@@ -11,9 +11,20 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
+// Config is a configuration for generating a filesystem.
+type Config struct {
+	Project      string
+	GlobPatterns []string
+
+	// a helper field, used to indicate if there was a project import without
+	// a usage of pattern (this means that we should not have patterns applied
+	// in the binary creation).
+	noPatterns bool
+}
+
 // fsProviderFn is a function that given a project name it returns
 // its filesystem.
-type fsProviderFn func(project string, globPatterns []string) (http.FileSystem, error)
+type fsProviderFn func(c Config) (http.FileSystem, error)
 
 // LoadBinaries load all binaries in the files according to the defined patterns.
 // The returned map maps project name that is used in any of the files that matched
@@ -44,18 +55,12 @@ func LoadBinaries(patterns []string, provider fsProviderFn) (map[string]string, 
 	// Load all binaries
 	binaries := make(map[string]string)
 	for project, config := range l {
-		binaries[project] = provider.loadBinary(project, *config)
+		binaries[project] = provider.loadBinary(*config)
 	}
 	return binaries, nil
 }
 
-type loader map[string]*config
-
-// config is a project configuration.
-type config struct {
-	patterns []string
-	noPattern bool
-}
+type loader map[string]*Config
 
 // inspectFile inspects a single file and looks for `gitfs.New` calls.
 // If a call was found, it finds all project that are used in the file.
@@ -82,7 +87,7 @@ func (l loader) inspectFile(file *ast.File, fset *token.FileSet) {
 
 					// Mark that project is used.
 					if l[project] == nil {
-						l[project] = &config{}
+						l[project] = &Config{Project: project}
 					}
 
 					// Treat OptGlob call.
@@ -90,11 +95,11 @@ func (l loader) inspectFile(file *ast.File, fset *token.FileSet) {
 					if len(patterns) == 0 {
 						// This call does not use pattern. Mark it so we will later load
 						// all files.
-						l[project].noPattern = true
+						l[project].noPatterns = true
 					} else {
 						// Accumulate all the patterns that are used for all the places
 						// that the project was used.
-						l[project].patterns = append(l[project].patterns, patterns...)
+						l[project].GlobPatterns = append(l[project].GlobPatterns, patterns...)
 					}
 				}
 			}
@@ -104,21 +109,21 @@ func (l loader) inspectFile(file *ast.File, fset *token.FileSet) {
 }
 
 // projectBinary retruns the binary encoded format of a single project.
-func (provider fsProviderFn) loadBinary(project string, c config) string {
-	log.Printf("Encoding project: %s", project)
+func (provider fsProviderFn) loadBinary(c Config) string {
+	log.Printf("Encoding project: %s", c.Project)
 	// If there was one place that did not use a pattern, we should ignore
 	// the patterns that were used in other places.
-	if c.noPattern {
-		c.patterns = nil
+	if c.noPatterns {
+		c.GlobPatterns = nil
 	}
-	fs, err := provider(project, c.patterns)
+	fs, err := provider(c)
 	if err != nil {
-		log.Printf("Failed creating filesystem %q: %s", project, err)
+		log.Printf("Failed creating filesystem %q: %s", c.Project, err)
 		return ""
 	}
 	b, err := encode(fs)
 	if err != nil {
-		log.Printf("Failed encoding filesystem %q: %s", project, err)
+		log.Printf("Failed encoding filesystem %q: %s", c.Project, err)
 		return ""
 	}
 	return string(b)
