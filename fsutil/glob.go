@@ -4,9 +4,8 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
 
-	"github.com/pkg/errors"
+	globutil "github.com/posener/gitfs/internal/glob"
 )
 
 // Glob return a filesystem that contain only files that match any of the provided
@@ -16,10 +15,11 @@ func Glob(fs http.FileSystem, patterns ...string) (http.FileSystem, error) {
 	if len(patterns) == 0 {
 		return fs, nil
 	}
-	if err := checkPatterns(patterns...); err != nil {
+	p, err := globutil.New(patterns...)
+	if err != nil {
 		return nil, err
 	}
-	return &glob{FileSystem: fs, patterns: patterns}, nil
+	return &glob{FileSystem: fs, patterns: p}, nil
 }
 
 // glob is an object that play the role of an http.FileSystem and an http.File.
@@ -29,7 +29,7 @@ type glob struct {
 	http.FileSystem
 	http.File
 	root     string
-	patterns []string
+	patterns globutil.Patterns
 }
 
 // Open a file, relative to root. If the file exists in the filesystem
@@ -48,7 +48,7 @@ func (g *glob) Open(name string) (http.File, error) {
 	}
 
 	// Regular file, match name.
-	if !g.match(path, info.IsDir()) {
+	if !g.patterns.Match(path, info.IsDir()) {
 		return nil, os.ErrNotExist
 	}
 	return &glob{
@@ -68,61 +68,9 @@ func (g *glob) Readdir(count int) ([]os.FileInfo, error) {
 	ret := make([]os.FileInfo, 0, len(files))
 	for _, file := range files {
 		path := filepath.Join(g.root, file.Name())
-		if g.match(path, file.IsDir()) {
+		if g.patterns.Match(path, file.IsDir()) {
 			ret = append(ret, file)
 		}
 	}
 	return ret, nil
-}
-
-// match a path to the defined patterns. If it is a file a full match
-// is required. If it is a directory, only matching a prefix of any of
-// the patterns is required.
-func (g *glob) match(path string, isDir bool) bool {
-	return (isDir && g.matchPrefix(path)) || (!isDir && g.matchFull(path))
-}
-
-// matchFull finds a matching of the whole name to any of the patterns.
-func (g *glob) matchFull(name string) bool {
-	for _, pattern := range g.patterns {
-		if ok, _ := filepath.Match(pattern, name); ok {
-			return true
-		}
-	}
-	return false
-}
-
-// matchPrefix finds a matching of prefix to a prefix of any of the patterns.
-func (g *glob) matchPrefix(prefix string) bool {
-	parts := strings.Split(prefix, string(filepath.Separator))
-nextPattern:
-	for _, pattern := range g.patterns {
-		patternParts := strings.Split(pattern, string(filepath.Separator))
-		if len(patternParts) < len(parts) {
-			continue
-		}
-		for i := 0; i < len(parts); i++ {
-			if ok, _ := filepath.Match(patternParts[i], parts[i]); !ok {
-				continue nextPattern
-			}
-		}
-		return true
-	}
-	return false
-}
-
-// checkPattens checks the validity of the patterns.
-func checkPatterns(patterns ...string) error {
-	var badPatterns []string
-	for _, pattern := range patterns {
-		_, err := filepath.Match(pattern, "x")
-		if err != nil {
-			badPatterns = append(badPatterns, pattern)
-			return errors.Wrap(err, pattern)
-		}
-	}
-	if len(badPatterns) > 0 {
-		return errors.Wrap(filepath.ErrBadPattern, strings.Join(badPatterns, ", "))
-	}
-	return nil
 }

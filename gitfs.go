@@ -108,6 +108,15 @@
 // file in the current directory that contains all the used filesystems' data.
 // This will cause all `gitfs.New` calls to automatically use the packed data,
 // insted of fetching the data on runtime.
+//
+// Excluding files
+//
+// Files exclusion can be done by including only specific files using a glob
+// pattern with `OptGlob` option, using the Glob options. This will affect
+// both local loading of files, remote loading and binary packing (may
+// reduce binary size). For example:
+//
+// 	fs, err := gitfs.New(ctx, "github.com/x/y/templates", gitfs.OptGlob("*.gotmpl", "*/*.gotmpl")
 package gitfs
 
 import (
@@ -115,6 +124,7 @@ import (
 	"net/http"
 
 	"github.com/pkg/errors"
+	"github.com/posener/gitfs/fsutil"
 	"github.com/posener/gitfs/internal/binfs"
 	"github.com/posener/gitfs/internal/githubfs"
 	"github.com/posener/gitfs/internal/localfs"
@@ -123,7 +133,7 @@ import (
 
 // OptClient sets up an HTTP client to perform request to the remote repository.
 // This client can be used for authorization credentials.
-func OptClient(client *http.Client) func(*config) {
+func OptClient(client *http.Client) option {
 	return func(c *config) {
 		c.client = client
 	}
@@ -132,7 +142,7 @@ func OptClient(client *http.Client) func(*config) {
 // OptLocal result in looking for local git repository before accessing remote
 // repository. The given path should be contained in a git repository which
 // has a remote URL that matches the requested project.
-func OptLocal(path string) func(*config) {
+func OptLocal(path string) option {
 	return func(c *config) {
 		c.localPath = path
 	}
@@ -140,9 +150,17 @@ func OptLocal(path string) func(*config) {
 
 // OptPrefetch sets prefetching all files in the filesystem when it is initially
 // loaded.
-func OptPrefetch(prefetch bool) func(*config) {
+func OptPrefetch(prefetch bool) option {
 	return func(c *config) {
 		c.prefetch = prefetch
+	}
+}
+
+// OptGlob define glob patterns for which only matching files and directories
+// will be included in the filesystem.
+func OptGlob(patterns ...string) option {
+	return func(c *config) {
+		c.patterns = patterns
 	}
 }
 
@@ -165,13 +183,17 @@ func New(ctx context.Context, project string, opts ...option) (http.FileSystem, 
 	switch {
 	case c.localPath != "":
 		log.Printf("FileSystem %q from local directory", project)
-		return localfs.New(project, c.localPath)
+		fs, err := localfs.New(project, c.localPath)
+		if err != nil {
+			return nil, err
+		}
+		return fsutil.Glob(fs, c.patterns...)
 	case binfs.Match(project):
 		log.Printf("FileSystem %q from binary", project)
 		return binfs.Get(project), nil
 	case githubfs.Match(project):
 		log.Printf("FileSystem %q from remote Github repository", project)
-		return githubfs.New(ctx, c.client, project, c.prefetch)
+		return githubfs.New(ctx, c.client, project, c.prefetch, c.patterns)
 	default:
 		return nil, errors.Errorf("project %q not supported", project)
 	}
@@ -204,6 +226,7 @@ type config struct {
 	client    *http.Client
 	localPath string
 	prefetch  bool
+	patterns  []string
 }
 
 type option func(*config)

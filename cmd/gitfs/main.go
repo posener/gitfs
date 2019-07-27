@@ -82,8 +82,9 @@ func generate(w io.Writer) error {
 	})
 }
 
-func provider(project string) (http.FileSystem, error) {
-	return gitfs.New(context.Background(), project, gitfs.OptPrefetch(true))
+func provider(c binfs.Config) (http.FileSystem, error) {
+	return gitfs.New(context.Background(), c.Project,
+		gitfs.OptPrefetch(true), gitfs.OptGlob(c.GlobPatterns...))
 }
 
 // getOut fixes out variable if it points to a directory or a file

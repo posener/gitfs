@@ -10,5 +10,5 @@ import (
 func main() {
 	ctx := context.Background()
 	gitfs.New(ctx, "github.com/a/b")
-	gitfs.New(ctx, "github.com/c/d")
+	gitfs.New(ctx, "github.com/c/d", gitfs.OptGlob("foo", "*"))
 }
