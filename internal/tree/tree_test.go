@@ -55,8 +55,8 @@ func TestTree(t *testing.T) {
 func TestOpen(t *testing.T) {
 	t.Parallel()
 	tr := make(Tree)
-	require.NoError(t, tr.AddFile("a", 6, contentProvider("file a")))
-	require.NoError(t, tr.AddFile("b/c", 6, contentProvider("file c")))
+	require.NoError(t, tr.AddFileContent("a", []byte("file a")))
+	require.NoError(t, tr.AddFileContent("b/c", []byte("file c")))
 
 	// Valid file paths.
 	for _, path := range []string{"a", "/a"} {
@@ -93,7 +93,7 @@ func TestOpen_concurrent(t *testing.T) {
 	)
 
 	tr := make(Tree)
-	require.NoError(t, tr.AddFile("a", 6, contentProvider("file a")))
+	require.NoError(t, tr.AddFileContent("a", []byte("file a")))
 	var wg sync.WaitGroup
 
 	wg.Add(goroutines)
@@ -145,7 +145,7 @@ func TestFile_read(t *testing.T) {
 	content := "content"
 
 	tr := make(Tree)
-	require.NoError(t, tr.AddFile("a", len(content), contentProvider(content)))
+	require.NoError(t, tr.AddFileContent("a", []byte(content)))
 
 	assertContent(t, tr["a"].Open(), content)
 }
@@ -229,13 +229,4 @@ func assertContent(t *testing.T, r io.Reader, content string) {
 	b, err := ioutil.ReadAll(r)
 	require.NoError(t, err)
 	assert.Equal(t, content, string(b))
-}
-
-func contentProvider(content string) func(context.Context) ([]byte, error) {
-	return func(ctx context.Context) ([]byte, error) {
-		if ctx.Err() != nil {
-			return nil, ctx.Err()
-		}
-		return []byte(content), nil
-	}
 }

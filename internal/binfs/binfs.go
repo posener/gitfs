@@ -6,7 +6,6 @@ package binfs
 
 import (
 	"bytes"
-	"context"
 	"encoding/base64"
 	"encoding/gob"
 	"fmt"
@@ -130,13 +129,7 @@ func decodeV1(data string) (tree.Tree, error) {
 		t.AddDir(dir)
 	}
 	for path, content := range storage.Files {
-		content := content
-		t.AddFile(path, len(content), func(ctx context.Context) ([]byte, error) {
-			if err := ctx.Err(); err != nil {
-				return nil, err
-			}
-			return content, nil
-		})
+		t.AddFileContent(path, content)
 	}
 	return t, err
 }
