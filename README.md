@@ -127,6 +127,17 @@ file in the current directory that contains all the used filesystems' data.
 This will cause all `gitfs.New` calls to automatically use the packed data,
 insted of fetching the data on runtime.
 
+#### Excluding files
+
+Files exclusion can be done by including only specific files using a glob
+pattern with `OptGlob` option, using the Glob options. This will affect
+both local loading of files, remote loading and binary packing (may
+reduce binary size). For example:
+
+```go
+fs, err := gitfs.New(ctx, "github.com/x/y/templates", gitfs.OptGlob("*.gotmpl", "*/*.gotmpl")
+```
+
 ## Sub Packages
 
 * [bin](./bin): Package bin is a proxy to the internal/binfs.Register function.
