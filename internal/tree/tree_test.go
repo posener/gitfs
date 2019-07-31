@@ -85,6 +85,20 @@ func TestOpen(t *testing.T) {
 	_, err = tr.Open("a/")
 	assert.EqualError(t, err, os.ErrInvalid.Error())
 }
+
+func TestTree_empty(t *testing.T) {
+	t.Parallel()
+
+	tr := make(Tree)
+	root, err := tr.Open("/")
+	require.NoError(t, err)
+
+	files, err := root.Readdir(0)
+	require.NoError(t, err)
+
+	assert.Len(t, files, 0)
+}
+
 func TestOpen_concurrent(t *testing.T) {
 	t.Parallel()
 	const (

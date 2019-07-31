@@ -36,6 +36,10 @@ func (t Tree) Open(name string) (http.File, error) {
 
 	opener := t[path]
 	if opener == nil {
+		if path == "" {
+			// No files were added yet, return empty root directory.
+			return newDir("/"), nil
+		}
 		log.Printf("File %s not found", name)
 		return nil, os.ErrNotExist
 	}

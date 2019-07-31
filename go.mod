@@ -14,4 +14,5 @@ require (
 	google.golang.org/appengine v1.6.1 // indirect
 	gopkg.in/src-d/go-billy.v4 v4.3.1
 	gopkg.in/src-d/go-git.v4 v4.12.0
+	rsc.io/diff v0.0.0-20190621135850-fe3479844c3c
 )
