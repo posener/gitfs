@@ -11,25 +11,35 @@ import (
 	"golang.org/x/tools/go/packages"
 )
 
+// Calls is a map of project to load configuration.
+type Calls map[string]*Config
+
 // Config is a configuration for generating a filesystem.
 type Config struct {
-	Project      string
-	GlobPatterns []string
-
+	Project string
+	// globPatterns is a union of all globPatterns that found in all calls
+	// for this project.
+	globPatterns []string
 	// a helper field, used to indicate if there was a project import without
 	// a usage of pattern (this means that we should not have patterns applied
 	// in the binary creation).
 	noPatterns bool
 }
 
+// GlobPatterns that should be used for this project.
+func (c *Config) GlobPatterns() []string {
+	if c.noPatterns {
+		return nil
+	}
+	return c.globPatterns
+}
+
 // fsProviderFn is a function that given a project name it returns
 // its filesystem.
 type fsProviderFn func(c Config) (http.FileSystem, error)
 
-// LoadBinaries load all binaries in the files according to the defined patterns.
-// The returned map maps project name that is used in any of the files that matched
-// any of the pattern to its binary encoded content.
-func LoadBinaries(patterns []string, provider fsProviderFn) (map[string]string, error) {
+// LoadCalls load all calls to gitfs.New in the files according to the defined patterns.
+func LoadCalls(patterns ...string) (Calls, error) {
 	pkgs, err := packages.Load(&packages.Config{Mode: packages.LoadAllSyntax}, patterns...)
 	if err != nil {
 		return nil, errors.Wrap(err, "loading packages")
@@ -45,28 +55,31 @@ func LoadBinaries(patterns []string, provider fsProviderFn) (map[string]string, 
 	}
 
 	// Find all projects
-	l := make(lookup)
+	c := make(Calls)
 	for _, pkg := range pkgs {
 		for _, file := range pkg.Syntax {
-			l.lookupAST(file, pkg.Fset)
+			c.lookupAST(file, pkg.Fset)
 		}
 	}
-
-	// Load all binaries
-	binaries := make(map[string]string)
-	for project, config := range l {
-		binaries[project] = loadBinary(provider, *config)
-	}
-	return binaries, nil
+	return c, nil
 }
 
-// lookup finds calls for gift.New given an AST.
-type lookup map[string]*Config
+// GenerateBinaries generate binary representation to all given calls.
+// The returned map maps project name that is used in any of the files that matched
+// any of the pattern to its binary encoded content.
+func GenerateBinaries(c Calls, provider fsProviderFn) map[string]string {
+	// Load all binaries
+	binaries := make(map[string]string)
+	for project, config := range c {
+		binaries[project] = loadBinary(provider, *config)
+	}
+	return binaries
+}
 
 // lookupAST inspects a single AST and looks for `gitfs.New` calls.
 // If a call was found, it saves the project this call was called for
 // and options it was called with.
-func (l lookup) lookupAST(file *ast.File, fset *token.FileSet) {
+func (c Calls) lookupAST(file *ast.File, fset *token.FileSet) {
 	ast.Inspect(file, func(n ast.Node) bool {
 		if call, ok := n.(*ast.CallExpr); ok {
 			var id *ast.Ident
@@ -88,8 +101,8 @@ func (l lookup) lookupAST(file *ast.File, fset *token.FileSet) {
 					}
 
 					// Mark that project is used.
-					if l[project] == nil {
-						l[project] = &Config{Project: project}
+					if c[project] == nil {
+						c[project] = &Config{Project: project}
 					}
 
 					// Treat OptGlob call.
@@ -103,11 +116,11 @@ func (l lookup) lookupAST(file *ast.File, fset *token.FileSet) {
 					if len(patterns) == 0 {
 						// This call does not use pattern. Mark it so we will later load
 						// all files.
-						l[project].noPatterns = true
+						c[project].noPatterns = true
 					} else {
 						// Accumulate all the patterns that are used for all the places
 						// that the project was used.
-						l[project].GlobPatterns = append(l[project].GlobPatterns, patterns...)
+						c[project].globPatterns = append(c[project].globPatterns, patterns...)
 					}
 				}
 			}
@@ -119,11 +132,6 @@ func (l lookup) lookupAST(file *ast.File, fset *token.FileSet) {
 // projectBinary retruns the binary encoded format of a single project.
 func loadBinary(provider fsProviderFn, c Config) string {
 	log.Printf("Encoding project: %s", c.Project)
-	// If there was one place that did not use a pattern, we should ignore
-	// the patterns that were used in other places.
-	if c.noPatterns {
-		c.GlobPatterns = nil
-	}
 	fs, err := provider(c)
 	if err != nil {
 		log.Printf("Failed creating filesystem %q: %s", c.Project, err)

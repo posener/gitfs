@@ -15,25 +15,35 @@ const (
 	project2 = "github.com/c/d"
 )
 
-func TestLoadSimulation(t *testing.T) {
-	var p testProvider
-
-	// Simulate a `gitfs ./testdata` command.
-	// Instead of running the gitfs command which invokes `LoadBinaries` and
-	// creates a go file with `Register()` calls, we invoke loadBinaries with
-	// the same arguments and call the `Register()` function with the result
-	// instead.
-	binaries, err := LoadBinaries([]string{"./testdata"}, p.provide)
+func TestLoadCalls(t *testing.T) {
+	t.Parallel()
+	got, err := LoadCalls("./testdata")
 	require.NoError(t, err)
 
-	// Check that two calls to `gitfs`.New with the right projects
-	// were observed, as this is what ./testdata/testdata.go calls.
-	wantCalls := []Config{
-		{Project: project1, noPatterns: true},
-		{Project: project2, GlobPatterns: []string{"foo", "*"}},
+	want := Calls{
+		project1: &Config{Project: project1, noPatterns: true},
+		project2: &Config{Project: project2, globPatterns: []string{"foo", "*"}},
 	}
-	assert.ElementsMatch(t, wantCalls, p.calls)
 
+	assert.Equal(t, want, got)
+}
+
+func TestLoadCalls_patternNotFound(t *testing.T) {
+	t.Parallel()
+
+	_, err := LoadCalls("./nosuchpackage")
+	assert.Error(t, err)
+}
+
+func TestGenerateBinaries(t *testing.T) {
+	var p testProvider
+
+	calls := Calls{
+		project1: &Config{Project: project1, noPatterns: true},
+		project2: &Config{Project: project2, globPatterns: []string{"foo", "*"}},
+	}
+
+	binaries := GenerateBinaries(calls, p.provide)
 	// Register the data that was created by loadBinaries.
 	for _, project := range []string{project1, project2} {
 		data := binaries[project]
@@ -53,17 +63,6 @@ func TestLoadSimulation(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, project, string(b))
 	}
-}
-
-func TestLoadBinaries_patternNotFound(t *testing.T) {
-	t.Parallel()
-
-	var p testProvider
-
-	_, err := LoadBinaries([]string{"./nosuchpackage"}, p.provide)
-
-	assert.Error(t, err)
-	assert.Equal(t, 0, len(p.calls))
 }
 
 type testProvider struct {

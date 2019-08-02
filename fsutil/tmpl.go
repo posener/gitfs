@@ -116,6 +116,13 @@ func parseGlob(fs http.FileSystem, parse func(name string, content string) error
 		if err != nil {
 			return errors.Wrapf(err, "opening template %s", walker.Path())
 		}
+		st, err := f.Stat()
+		if err != nil {
+			return errors.Wrapf(err, "stat %s", walker.Path())
+		}
+		if st.IsDir() {
+			continue
+		}
 
 		buf.Reset()
 		buf.ReadFrom(f)
