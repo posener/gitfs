@@ -127,6 +127,12 @@ file in the current directory that contains all the used filesystems' data.
 This will cause all `gitfs.New` calls to automatically use the packed data,
 insted of fetching the data on runtime.
 
+By default, a test will also be generated with the code. This test fails
+when the local files are modified without updating the binary content.
+
+An interesting anecdote is that gitfs command is using itself for generating
+its own templates.
+
 #### Excluding files
 
 Files exclusion can be done by including only specific files using a glob
@@ -135,7 +141,9 @@ both local loading of files, remote loading and binary packing (may
 reduce binary size). For example:
 
 ```go
-fs, err := gitfs.New(ctx, "github.com/x/y/templates", gitfs.OptGlob("*.gotmpl", "*/*.gotmpl")
+fs, err := gitfs.New(ctx,
+	"github.com/x/y/templates",
+	gitfs.OptGlob("*.gotmpl", "*/*.gotmpl"))
 ```
 
 ## Sub Packages
