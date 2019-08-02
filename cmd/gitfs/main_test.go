@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"testing"
 
@@ -12,24 +13,30 @@ import (
 )
 
 func TestRun(t *testing.T) {
+	clean()
 	t.Run("Successful run", func(t *testing.T) {
 		t.Parallel()
-		stderr, err := runCmd(t, "-out", "testout1", "../../examples/templates/...")
+		stderr, err := runGo(t, "run", ".", "-out", "testout1.go", "../../examples/templates/...")
 		assert.NoErrorf(t, err, "Expected success, got error: %s", stderr)
 
 		// Test the output file.
-		data, err := ioutil.ReadFile("testout1")
+		data, err := ioutil.ReadFile("testout1.go")
 		require.NoError(t, err)
 		assert.True(t, regexp.MustCompile(`package main`).Match(data))
+
+		stderr, err = runGo(t, "build", ".")
+		require.NoErrorf(t, err, "Build failed: %s", stderr)
+		stderr, err = runGo(t, "test", "./...", "-run", "TestGitFS")
+		require.NoErrorf(t, err, "Test failed: %s", stderr)
 	})
 
 	t.Run("Pattern must be provided", func(t *testing.T) {
 		t.Parallel()
-		_, err := runCmd(t, "-out", "testout2")
+		_, err := runGo(t, "run", ".", "-out", "testout2.go")
 		assert.Error(t, err)
 
 		// Test that file was deleted after failure.
-		_, err = os.Stat("testout2")
+		_, err = os.Stat("testout2.go")
 		assert.Error(t, err)
 	})
 }
@@ -97,9 +104,7 @@ func TestGetPkg(t *testing.T) {
 	}
 }
 
-func runCmd(t *testing.T, gitfsArgs ...string) (stderr string, err error) {
-	args := []string{"run", "."}
-	args = append(args, gitfsArgs...)
+func runGo(t *testing.T, args ...string) (stderr string, err error) {
 	cmd := exec.Command("go", args...)
 	stderrBuf, err := cmd.StderrPipe()
 	if err != nil {
@@ -112,4 +117,14 @@ func runCmd(t *testing.T, gitfsArgs ...string) (stderr string, err error) {
 	}
 	err = cmd.Wait()
 	return string(stderrBytes), err
+}
+
+func clean() {
+	paths, err := filepath.Glob("testout*.go")
+	if err != nil {
+		panic(err)
+	}
+	for _, path := range paths {
+		os.Remove(path)
+	}
 }
