@@ -13,9 +13,8 @@ import (
 )
 
 func TestRun(t *testing.T) {
-	clean()
+	defer clean()
 	t.Run("Successful run", func(t *testing.T) {
-		t.Parallel()
 		stderr, err := runGo(t, "run", ".", "-out", "testout1.go", "../../examples/templates/...")
 		assert.NoErrorf(t, err, "Expected success, got error: %s", stderr)
 
@@ -31,7 +30,6 @@ func TestRun(t *testing.T) {
 	})
 
 	t.Run("Pattern must be provided", func(t *testing.T) {
-		t.Parallel()
 		_, err := runGo(t, "run", ".", "-out", "testout2.go")
 		assert.Error(t, err)
 

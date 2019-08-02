@@ -10,6 +10,7 @@ import (
 	"encoding/gob"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 
 	"github.com/pkg/errors"
@@ -99,6 +100,7 @@ func encode(fs http.FileSystem) (string, error) {
 			}
 			storage.Files[path] = b
 		}
+		log.Printf("Encoded path: %s", path)
 	}
 	if err := walker.Err(); err != nil {
 		return "", errors.Wrap(err, "walking filesystem")
