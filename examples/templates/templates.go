@@ -16,14 +16,21 @@ var localDebug = os.Getenv("LOCAL_DEBUG")
 
 func main() {
 	ctx := context.Background()
-	fs, err := gitfs.New(ctx, "github.com/posener/gitfs/examples/templates", gitfs.OptLocal(localDebug))
+	// Open repository 'github.com/posener/gitfs' at path
+	// 'examples/templates' with the local option from
+	// environment variable.
+	fs, err := gitfs.New(ctx,
+		"github.com/posener/gitfs/examples/templates",
+		gitfs.OptLocal(localDebug))
 	if err != nil {
 		log.Fatalf("Failed initializing git filesystem: %s.", err)
 	}
-
+	// Parse templates from the loaded filesystem using a glob
+	// pattern.
 	tmpls, err := fsutil.TmplParseGlob(fs, nil, "*.gotmpl")
 	if err != nil {
 		log.Fatalf("Failed parsing templates.")
 	}
+	// Execute a template according to its file name.
 	tmpls.ExecuteTemplate(os.Stdout, "tmpl1.gotmpl", "Foo")
 }
