@@ -9,7 +9,7 @@ import (
 	"text/template"
 
 	"github.com/pkg/errors"
-	contentdiff "rsc.io/diff"
+	"rsc.io/diff"
 )
 
 const (
@@ -168,7 +168,7 @@ func contentDiff(a, b http.FileSystem, path string) (*PathDiff, error) {
 	if string(aData) == string(bData) {
 		return nil, nil
 	}
-	d := contentdiff.Format(string(aData), string(bData))
+	d := diff.Format(string(aData), string(bData), diff.OptSuppressCommon())
 	if d != "" {
 		return &PathDiff{
 			Path:     path,

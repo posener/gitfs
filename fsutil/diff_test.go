@@ -29,9 +29,8 @@ func TestDiff(t *testing.T) {
 [common-dir/only-in-a]: only in a
 [common-dir/only-in-b]: only in b
 [content-diff]: content diff (-a, +b):
- 1
--2
-+3
+2-2
+2+3
 [dir-in-a-file-in-b]: on a is directory, on b file
 [file-in-a-dir-in-b]: on a is file, on b directory
 `

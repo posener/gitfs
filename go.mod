@@ -16,3 +16,5 @@ require (
 	gopkg.in/src-d/go-git.v4 v4.12.0
 	rsc.io/diff v0.0.0-20190621135850-fe3479844c3c
 )
+
+replace rsc.io/diff => github.com/posener/diff v0.0.0-20190808172948-eff7f6d9b194
