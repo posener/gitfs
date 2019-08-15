@@ -130,6 +130,11 @@ insted of fetching the data on runtime.
 By default, a test will also be generated with the code. This test fails
 when the local files are modified without updating the binary content.
 
+Use binary-packing with `go generate`: To generate all filesystems used
+by a project add '//go:generate gitfs [./..](./..).' in the root of the project.
+To generate only a specific filesystem add `//go:generate gitfs $GOFILE` in
+the file it is being used.
+
 An interesting anecdote is that gitfs command is using itself for generating
 its own templates.
 
