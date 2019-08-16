@@ -43,7 +43,9 @@ func TestGenerateBinaries(t *testing.T) {
 		project2: &Config{Project: project2, globPatterns: []string{"foo", "*"}},
 	}
 
+	// Generate binaries using the fake provider.
 	binaries := GenerateBinaries(calls, p.provide)
+
 	// Register the data that was created by loadBinaries.
 	for _, project := range []string{project1, project2} {
 		data := binaries[project]

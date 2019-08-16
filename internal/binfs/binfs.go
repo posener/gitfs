@@ -6,9 +6,11 @@ package binfs
 
 import (
 	"bytes"
+	"compress/gzip"
 	"encoding/base64"
 	"encoding/gob"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -54,7 +56,7 @@ func Register(project string, version int, encoded string) {
 		fs, err = decodeV1(encoded)
 	default:
 		panic(fmt.Sprintf(`Registered filesystem is from future version %d.
-			The current gitfs suports version up to %d.
+			The current gitfs suports versions up to %d.
 			Please update github.com/posener/gitfs.`, version, EncodeVersion))
 	}
 	if err != nil {
@@ -107,12 +109,20 @@ func encode(fs http.FileSystem) (string, error) {
 	}
 
 	// Encode the storage object into a string.
-	b := bytes.NewBuffer(nil)
-	err := gob.NewEncoder(b).Encode(storage)
+	// storage object -> GOB -> gzip -> base64.
+	var buf bytes.Buffer
+	w := gzip.NewWriter(&buf)
+	err := gob.NewEncoder(w).Encode(storage)
 	if err != nil {
 		return "", errors.Wrap(err, "encoding gob")
 	}
-	return base64.StdEncoding.EncodeToString(b.Bytes()), nil
+	err = w.Close()
+	if err != nil {
+		return "", errors.Wrap(err, "close gzip")
+	}
+	s := base64.StdEncoding.EncodeToString(buf.Bytes())
+	log.Printf("Encoded size: %d", len(s))
+	return s, err
 }
 
 // decodeV1 returns a filesystem from data that was encoded in V1.
@@ -122,7 +132,17 @@ func decodeV1(data string) (tree.Tree, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "decoding base64")
 	}
-	err = gob.NewDecoder(bytes.NewReader(b)).Decode(&storage)
+	var r io.ReadCloser
+	r, err = gzip.NewReader(bytes.NewReader(b))
+	if err != nil {
+		// Fallback to non-zipped version.
+		log.Printf(
+			"Decoding gzip: %s. Falling back to non-gzip loading.",
+			err)
+		r = ioutil.NopCloser(bytes.NewReader(b))
+	}
+	defer r.Close()
+	err = gob.NewDecoder(r).Decode(&storage)
 	if err != nil {
 		return nil, errors.Wrap(err, "decoding gob")
 	}
