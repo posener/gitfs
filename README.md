@@ -185,6 +185,13 @@ if err != nil {
 tmpls.ExecuteTemplate(os.Stdout, "tmpl1.gotmpl", "Foo")
 ```
 
+ Output:
+
+```
+Hello, Foo
+
+```
+
 ##### Open
 
 With gitfs you can open a remote git repository, and load any file,
@@ -212,6 +219,13 @@ if err != nil {
 
 // Copy the content to stdout.
 io.Copy(os.Stdout, f)
+```
+
+ Output:
+
+```
+# helloworld
+
 ```
 
 
