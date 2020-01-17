@@ -9,7 +9,7 @@ import (
 	"text/template"
 
 	"github.com/pkg/errors"
-	"rsc.io/diff"
+	"github.com/posener/diff"
 )
 
 const (
