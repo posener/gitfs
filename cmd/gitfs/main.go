@@ -44,6 +44,8 @@ func main() {
 	}
 
 	gitfs.SetLogger(log.New(os.Stderr, "[gitfs] ", log.LstdFlags))
+	log.Printf("Starting binary packing...")
+	log.Printf("Encoding version: %d", binfs.EncodeVersion)
 	loadTemplates()
 
 	// Fix flags.
