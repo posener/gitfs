@@ -10,7 +10,7 @@ Package gitfs is a complete solution for static files in Go code.
 
 When Go code uses non-Go files, they are not packaged into the binary.
 The common approach to the problem, as implemented by
-[go-bindata](https://github.com/jteeuwen/go-bindata)
+[go-bindata](https://github.com/kevinburke/go-bindata)
 is to convert all the required static files into Go code, which
 eventually compiled into the binary.
 
