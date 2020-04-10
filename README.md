@@ -1,10 +1,7 @@
 # gitfs
 
-[![Build Status](https://travis-ci.org/posener/gitfs.svg?branch=master)](https://travis-ci.org/posener/gitfs)
 [![codecov](https://codecov.io/gh/posener/gitfs/branch/master/graph/badge.svg)](https://codecov.io/gh/posener/gitfs)
-[![golangci](https://golangci.com/badges/github.com/posener/gitfs.svg)](https://golangci.com/r/github.com/posener/gitfs)
-[![GoDoc](https://godoc.org/github.com/posener/gitfs?status.svg)](http://godoc.org/github.com/posener/gitfs)
-[![goreadme](https://goreadme.herokuapp.com/badge/posener/gitfs.svg)](https://goreadme.herokuapp.com)
+[![GoDoc](https://img.shields.io/badge/pkg.go.dev-doc-blue)](http://pkg.go.dev/github.com/posener/gitfs)
 
 Package gitfs is a complete solution for static files in Go code.
 
@@ -46,7 +43,7 @@ remote repository.
 * In [./fsutil](./fsutil) there are some general useful tools around the
 `http.FileSystem` interace.
 
-#### Usage
+## Usage
 
 To create a filesystem using the `New` function, provide the Git
 project with the pattern: `github.com/<owner>/<repo>(/<path>)?(@<ref>)?`.
@@ -80,7 +77,7 @@ library:
 http.Handle("/", http.FileServer(fs))
 ```
 
-#### Private Repositories
+## Private Repositories
 
 When used with private github repository, the Github API calls should be
 instrumented with the appropriate credentials. The credentials can be
@@ -96,7 +93,7 @@ client := oauth2.NewClient(
 fs, err := gitfs.New(ctx, "github.com/x/y", gitfs.OptClient(client))
 ```
 
-#### Development
+## Development
 
 For quick development workflows, it is easier and faster to use local static
 content and not remote content that was pushed to a remote repository.
@@ -114,7 +111,7 @@ local files will be used, while running without it will result in using
 the remote files. (the value of the environment variable should point
 to any directory within the github project).
 
-#### Binary Packing
+## Binary Packing
 
 Using gitfs does not mean that files are required to be remotely fetched.
 When binary packing of the files is needed, a command line tool can pack
@@ -138,7 +135,7 @@ the file it is being used.
 An interesting anecdote is that gitfs command is using itself for generating
 its own templates.
 
-#### Excluding files
+## Excluding files
 
 Files exclusion can be done by including only specific files using a glob
 pattern with `OptGlob` option, using the Glob options. This will affect
@@ -155,11 +152,17 @@ fs, err := gitfs.New(ctx,
 
 * [bin](./bin): Package bin is a proxy to the internal/binfs.Register function.
 
+* [cmd/gitfs](./cmd/gitfs): gitfs command line tool, for generating binary conetent of the used filesystems.
+
+* [examples/godoc](./examples/godoc): An example locally serves files from github.com/golang/go/doc.
+
+* [examples/templates](./examples/templates): An example that shows how gitfs helps using template files with Go code smoothly.
+
 * [fsutil](./fsutil): Package fsutil provides useful utility functions for http.FileSystem.
 
-#### Examples
+## Examples
 
-##### Fsutil
+### Fsutil
 
 The [./fsutil](./fsutil) package is a collection of useful functions that can work with
 any `http.FileSystem` implementation.
@@ -189,10 +192,9 @@ tmpls.ExecuteTemplate(os.Stdout, "tmpl1.gotmpl", "Foo")
 
 ```
 Hello, Foo
-
 ```
 
-##### Open
+### Open
 
 With gitfs you can open a remote git repository, and load any file,
 including non-go files.
@@ -225,10 +227,7 @@ io.Copy(os.Stdout, f)
 
 ```
 # helloworld
-
 ```
 
-
 ---
-
-Created by [goreadme](https://github.com/apps/goreadme)
+Readme created from Go doc with [goreadme](https://github.com/posener/goreadme)
